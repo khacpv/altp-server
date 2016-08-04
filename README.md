@@ -1,0 +1,2 @@
+# altp-server
+server altp
