@@ -21,9 +21,12 @@ var numUsers = 0;
 io.on('connection', function (socket) {
     var addedUser = false;
 
-    socket.on('ping', function (data) {
+    socket.on('test', function (data) {
         var count = data.count;
-        //socket.emit('ping', {count: count + 1});
+        socket.emit('test', {
+            count: count + 1,
+            text: 'hello'
+        });
     });
 
     // when the client emits 'new message', this listens and executes
