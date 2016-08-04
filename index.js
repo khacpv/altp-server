@@ -23,7 +23,7 @@ io.on('connection', function (socket) {
 
     socket.on('ping', function (data) {
         var count = data.count;
-        socket.emit('ping', {count: count + 1});
+        //socket.emit('ping', {count: count + 1});
     });
 
     // when the client emits 'new message', this listens and executes

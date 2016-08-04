@@ -23,3 +23,6 @@ on website load.
 - Users can type chat messages to the chat room.
 - A notification is sent to all users when a user joins or leaves
 the chatroom.
+
+## Openshift
+$git remote add openshift ssh://57a368ed2d52710de4000033@altp-oic.rhcloud.com/~/git/altp.git/
