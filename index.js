@@ -7,8 +7,8 @@ var io = require('socket.io')(server);
 var ip = process.env.OPENSHIFT_NODEJS_IP || '192.168.1.102';
 var port = process.env.OPENSHIFT_NODEJS_PORT || 8080;
 
-server.listen(port, function () {
-  console.log('Server listening at port %d', port);
+server.listen(port,ip, function () {
+  console.log('Server listening at %s:%d', ip, port);
 });
 
 // Routing
