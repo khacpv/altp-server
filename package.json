@@ -1,9 +1,17 @@
 {
-  "name": "socket.io-chat",
+  "name": "altp",
   "version": "0.0.0",
-  "description": "A simple chat client using socket.io",
-  "main": "index.js",
-  "author": "Grant Timmerman",
+  "description": "ALTP server",
+  "main": "./index.js",
+  "scripts": {
+    "install": ""
+  },
+  "author": {
+    "name": "khacpv",
+    "email": "khacpv@gmail.com",
+    "url": "http://altp-oic.com"
+  },
+  "homepage": "http://image-oic.com",
   "private": true,
   "license": "BSD",
   "dependencies": {
