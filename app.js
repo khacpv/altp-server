@@ -34,6 +34,10 @@ app.use(session({secret: 'express.io makes me very happy', resave: true, saveUni
 var home = require('./routes/home');
 app.use('/home', home);
 
+// altp
+var altpSock = require('./routes/altp/sock');
+altpSock.init(io);
+
 // 404 must below all of other routes.
 // If a route should not be found, it must be a 404 error
 app.use(function (req, res, next) {
