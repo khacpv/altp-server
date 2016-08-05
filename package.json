@@ -2,7 +2,7 @@
   "name": "altp",
   "version": "0.0.0",
   "description": "ALTP server",
-  "main": "./index.js",
+  "main": "./app.js",
   "scripts": {
     "install": ""
   },
@@ -15,7 +15,15 @@
   "private": true,
   "license": "BSD",
   "dependencies": {
+    "body-parser": "^1.15.1",
+    "coffee-script": "^1.10.0",
+    "cookie-parser": "~1.4.3",
     "express": "4.13.4",
+    "express-session": "^1.14.0",
+    "fs": "0.0.2",
+    "jade": "~1.11.0",
+    "less-middleware": "1.0.x",
+    "serve-favicon": "~2.3.0",
     "socket.io": "1.4.8"
   }
 }
