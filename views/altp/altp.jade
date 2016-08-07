@@ -1,0 +1,62 @@
+extends ../layout
+block header
+    link(rel='stylesheet', href='/libraries/bootstrap/css/bootstrap.min.css')
+    link(rel='stylesheet', href='//code.jquery.com/ui/1.10.4/themes/redmond/jquery-ui.css')
+    script(src='/libraries/jquery/jquery.min.js')
+    script(src='//code.jquery.com/ui/1.11.0/jquery-ui.js')
+    script(src='/libraries/bootstrap/js/bootstrap.min.js')
+    script(src='/libraries/jquery/jquery.min.js')
+    script(src='//cdn.techpines.io/jquery.event.drag-2.0.js')
+    script(src='/socket.io/socket.io.js')
+
+    link(rel='stylesheet', href='/altp/style.css')
+    script(src='/altp/script.js')
+block content
+    canvas(width=400, height=711)
+    div.content
+        div#login.center-vertical
+            div#loginForm.well(method='POST', action='')
+                h3 Faster5 Login
+                .form-group
+                    label Username
+                    input#name.form-control(type='text', name='user', placeholder='user name' value='user1')
+                .form-group
+                    label Address
+                    input#address.form-control(type='text', name='address', placeholder='address' value='ha noi')
+                .controls
+                    button(onclick='App.login()').btn.btn-primary.button-sign-in
+                        span.glyphicon.glyphicon-user
+                        | Sign In
+                .clearfix
+        button(onclick='App.search()').btn.btn-warning.button-sign-in
+            span.glyphicon.glyphicon-search
+            | Search
+        ul#userlist(style='color:white;')
+            li player1
+            li player2
+            li player3
+            li player4
+            li player5
+            li player6
+            li player7
+            li player8
+            li player9
+        button(onclick='App.play()').btn.btn-default.button-sign-in
+            span.glyphicon.glyphicon-play
+            | Play
+        div(style='color:white;')
+            span#question question: hay tra loi cau hoi sau: 1+1=?
+            ul(style='color:white;')
+                li#answerA()
+                    button(onclick='App.answer(0)').btn.btn-default.button-sign-in
+                        span A: 1
+                li#answerB()
+                    button(onclick='App.answer(1)').btn.btn-default.button-sign-in
+                        span B: 2
+                li#answerC()
+                    button(onclick='App.answer(2)').btn.btn-default.button-sign-in
+                        span C: 3
+                li#answerD()
+                    button(onclick='App.answer(3)').btn.btn-default.button-sign-in
+                        span D: 4
+        div#test(style='color:red;') debug

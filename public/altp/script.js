@@ -3,7 +3,7 @@ const App = {};
 
 App.url = '/faster5';
 
-App.socket = io.connect();
+App.socket = io();
 
 App.user = {
     id: '',
@@ -33,7 +33,7 @@ App.login = function () {
     App.user.name = $('#name').val();
     App.user.address = $('#address').val();
     App.user.fbId = 'YOUR_FB_ID_HERE';
-    App.socket.emit('faster5:login', {user: App.user});
+    App.socket.emit('login', {user: App.user});
 };
 
 App.loginCallback = function (data) {
@@ -44,7 +44,7 @@ App.loginCallback = function (data) {
 };
 
 App.search = function () {
-    App.socket.emit('faster5:search', {user: App.user});
+    App.socket.emit('search', {user: App.user});
     $('#userlist').html('loading...');
 };
 
@@ -78,7 +78,7 @@ App.searchCallback = function (data) {
 };
 
 App.play = function () {
-    App.socket.emit('faster5:play', {user: App.user, room: App.room});
+    App.socket.emit('play', {user: App.user, room: App.room});
 };
 
 App.playCallback = function (data) {
@@ -107,7 +107,7 @@ App.answer = function (index) {
         room: App.room,
         answerIndex: index
     };
-    App.socket.emit('faster5:answer', data);
+    App.socket.emit('answer', data);
 };
 
 App.answerCallback = function (data) {
@@ -128,7 +128,7 @@ App.answerCallback = function (data) {
         user: App.user,
         room: App.room
     };
-    App.socket.emit('faster5:answerNext', data);
+    App.socket.emit('answerNext', data);
 };
 
 App.answerNextCallback = function (data) {
@@ -158,50 +158,15 @@ App.logout = function () {
     })
 };
 
-App.pingCallback = function(data){
-    log('ping count: '+data.count);
-};
-
-App.draw = function (data) {
-    if (data.type == "dragstart") {
-        App.ctx.beginPath();
-        App.ctx.moveTo(data.x, data.y);
-    } else if (data.type == "drag") {
-        App.ctx.lineTo(data.x, data.y);
-        App.ctx.stroke();
-    } else {
-        App.ctx.stroke();
-        App.ctx.closePath();
-    }
-};
-
-$(function () {
-    log(localStorage.token);
-    App.ctx = $('canvas')[0].getContext('2d');
-    $('body').on('drag dragstart dragend', 'canvas', function (e) {
-        var offset = $(this).offset();
-        data = {
-            x: (e.clientX - offset.left),
-            y: (e.clientY - offset.top),
-            type: e.handleObj.type
-        };
-        App.draw(data);
-        App.socket.emit('faster5:draw', data);
-    });
-
-    App.socket.emit('faster5:ping',{count: 3});
-});
-
 var log = function (value) {
     $('#test').prepend('<br>' + value);
 };
 
 // register socket
-App.socket.on('faster5:draw', App.draw);
-App.socket.on('faster5:login', App.loginCallback);
-App.socket.on('faster5:search', App.searchCallback);
-App.socket.on('faster5:play', App.playCallback);
-App.socket.on('faster5:answer', App.answerCallback);
-App.socket.on('faster5:answerNext', App.answerNextCallback);
-App.socket.on('faster5:gameOver', App.gameOverCallback);
-App.socket.on('faster5:ping', App.pingCallback);
+App.socket.on('draw', App.draw);
+App.socket.on('login', App.loginCallback);
+App.socket.on('search', App.searchCallback);
+App.socket.on('play', App.playCallback);
+App.socket.on('answer', App.answerCallback);
+App.socket.on('answerNext', App.answerNextCallback);
+App.socket.on('gameOver', App.gameOverCallback);

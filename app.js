@@ -30,12 +30,10 @@ app.use(less(path.join(__dirname, 'public')));
 app.use(express.static(__dirname + '/public'));
 app.use(session({secret: 'express.io makes me very happy', resave: true, saveUninitialized: true}));
 
-// home
-var home = require('./routes/home');
-app.use('/home', home);
-
 // altp
+var altp = require('./routes/altp/altp');
 var altpSock = require('./routes/altp/sock');
+app.use('/altp', altp);
 altpSock.init(io);
 
 // 404 must below all of other routes.
@@ -74,7 +72,7 @@ app.use(function (err, req, res, next) {
     }
 });
 
-var ip = process.env.OPENSHIFT_NODEJS_IP || '192.168.1.102';
+var ip = process.env.OPENSHIFT_NODEJS_IP || '192.168.1.90';
 var port = process.env.OPENSHIFT_NODEJS_PORT || 8081;
 
 server.listen(port, ip, function () {

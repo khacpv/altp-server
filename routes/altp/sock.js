@@ -26,10 +26,229 @@ var altp = {
 
 altp.init = function (io) {
     io.on('connection', function (socket) {
-        altp.sock = socket;
+        var sock = socket;
 
-        socket.on('login', altp.login);
-        socket.on('search', altp.search);
+        /**
+         * user click login (with FB or username/address)
+         * @param data (name,address,fbId)
+         * */
+        var login = function (data) {
+            var reqUser = data.user;
+            console.log('reqUsername: ' + reqUser.name);
+            if (!reqUser || reqUser.name.length == 0) {
+                sock.emit('login', {success: false});
+                return;
+            }
+            var isExist = false;
+            var resUser = {};
+
+            for (var i = 0; i < altp.users.length; i++) {
+                if (altp.users[i].id === reqUser.id) {
+                    isExist = true;
+                    resUser = altp.users[i];
+                    break;
+                }
+            }
+            if (!isExist) {
+                resUser = new User((Math.random() * 10000000) | 0, reqUser.name || '', reqUser.address || '', reqUser.fbId || -1, reqUser.avatar || '');
+                altp.users.unshift(resUser); // push to beginning
+            }
+
+            sock.emit('login', {success: true, user: resUser});
+
+            log();
+        };
+
+        /**
+         * user click search button. Get 2 users into a room.
+         * @param data = {user.id}
+         * */
+        var search = function (data) {
+            var user = getUserById(data.user.id);
+            var room = null;
+
+            for (var i = 0; i < altp.rooms.length; i++) {
+                if (altp.rooms[i].users.length == 1) {
+                    room = altp.rooms[i];
+                    if (room.users[0].id != user.id) {
+                        room.users.push(user);
+                    }
+                    break;
+                }
+            }
+
+            user.answerIndex = -1;
+
+            if (room == null) {
+                // create a new room
+                var questions = [
+                    new Question('1+1=?', ['0', '1', '2', '3'], 2),
+                    new Question('1+2=?', ['0', '1', '2', '3'], 3),
+                    new Question('1+3=?', ['0', '4', '2', '3'], 1),
+                    new Question('1+4=?', ['0', '1', '5', '3'], 2),
+                    new Question('1+5=?', ['6', '1', '2', '3'], 0)
+                ];
+                room = new Room('room#' + altp.rooms.length, [user], questions);
+                altp.rooms.push(room);
+            }
+
+            room.questionIndex = 0;
+
+            sock.leave(user.room);
+            user.room = room.id;
+            sock.join(room.id);
+
+            var dataSearch = {
+                room: room,
+                dummyUsers: altp.dummyUsers
+            };
+
+            __io.to(room.id).emit('search', dataSearch);
+        };
+
+        /**
+         * user click play after search
+         * @param data = {user.id, room.id}
+         * */
+        var play = function(data){
+            var user = getUserById(data.user.id);
+            var room = getRoomById(data.room.id);
+            var i;
+            var isAllReady = true;
+
+            for(i = 0;i<room.users.length;i++){
+                if(room.users[i].id == user.id){
+                    room.users[i].ready = true;
+                    break;
+                }
+            }
+
+            for(i = 0;i<room.users.length;i++){
+                if(!room.users[i].ready){
+                    isAllReady = false;
+                    break;
+                }
+            }
+
+            // if others user is not ready --> show waiting dialog
+            if(!isAllReady){
+                sock.emit('play',{notReady: true});
+                return;
+            }
+
+            var count = 4;
+
+            var countInterval = setInterval(function () {
+                count = count - 1;
+
+                var data = {
+                    count: count
+                };
+
+                console.log('send count: '+data.count);
+
+                sock.emit('play', data);
+
+                if (count <= 0) {
+                    clearInterval(countInterval);
+                }
+            }, 1000);
+
+            setTimeout(function () {
+                var dataResponse = {
+                    question: room.questions[room.questionIndex]
+                };
+                __io.to(room.id).emit('play', dataResponse);
+            }, 4000);
+        };
+
+        /**
+         * user answer an question
+         * @param data = {user.id, room.id, answerIndex}
+         * */
+        var answer = function(data){
+            var user = getUserById(data.user.id);
+            var room = getRoomById(data.room.id);
+            var answerIndex = data.answerIndex;
+
+            for(var j = 0;j<room.users.length;j++){
+                if(room.users[j].id == user.id){
+                    user.answerIndex = answerIndex;
+                    break;
+                }
+            }
+
+            var isAllAnswered = true;
+
+            for(var i = 0;i<room.users.length;i++){
+                if(room.users[i].answerIndex < 0){
+                    isAllAnswered = false;
+                    break;
+                }
+            }
+
+            if(!isAllAnswered){
+                __io.to(room.id).emit('answer',{notAllAnswered:true});
+                return;
+            }
+
+            var dataResponse = {
+                answerRight: room.questions[room.questionIndex].answerRight,
+                answerUsers: room.users
+            };
+            room.questionIndex++;
+            __io.to(room.id).emit('answer', dataResponse);
+
+            // game over
+            if(room.questionIndex == room.questions.length){
+                gameOver(data);
+            }
+        };
+
+        /**
+         * get next question
+         * @param data = {user.id, room.id}
+         * */
+        var answerNext = function(data){
+            var user = getUserById(data.user.id);
+            var room = getRoomById(data.room.id);
+
+            for(var i = 0;i<room.users.length;i++){
+                room.users[i].answerIndex = -1;
+            }
+
+            var dataResponse = {
+                question: room.questions[room.questionIndex]
+            };
+            __io.to(room.id).emit('answerNext', dataResponse);
+        };
+
+        /**
+         * the game over, called by answer()
+         * @param data = {user.id, room.id}
+         * */
+        var gameOver = function(data){
+            var user = getUserById(data.user.id);
+            var room = getRoomById(data.room.id);
+
+            for(var k = 0;k<room.users.length;k++){
+                room.users[k].answerIndex = -1;
+            }
+
+            room.questionIndex = 0;
+
+            var dataResponse = {
+                users: room.users
+            };
+            __io.to(room.id).emit('gameOver',dataResponse);
+        };
+
+        socket.on('login', login);
+        socket.on('search', search);
+        socket.on('play', play);
+        socket.on('answer', answer);
+        socket.on('answerNext', answerNext);
+        socket.on('gameOver', gameOver);
     });
 };
 
@@ -39,84 +258,12 @@ var log = function () {
         }).join(','));
 };
 
-/**
- * user click login (with FB or username/address)
- * @param data (name,address,fbId)
- * */
-altp.login = function (data) {
-    var reqUser = data.user;
-    console.log('reqUsername: ' + reqUser.name);
-    if (!reqUser || reqUser.name.length == 0) {
-        altp.sock.emit('login', {success: false});
-        return;
-    }
-    var isExist = false;
-    var resUser = {};
-
-    for (var i = 0; i < altp.users.length; i++) {
-        if (altp.users[i].id === reqUser.id) {
-            isExist = true;
-            resUser = altp.users[i];
-            break;
-        }
-    }
-    if (!isExist) {
-        resUser = new User((Math.random() * 10000000) | 0, reqUser.name || '', reqUser.address || '', reqUser.fbId || -1, reqUser.avatar || '');
-        altp.users.unshift(resUser); // push to beginning
-    }
-
-    altp.sock.emit('login', {success: true, user: resUser});
-
-    log();
-};
+/************** UTILITIES **************/
 
 /**
- * user click search button. Get 2 users into a room.
- * @param data = {user.id}
+ * @param userId id of user
+ * @return user object
  * */
-altp.search = function (data) {
-    var user = getUserById(data.user.id);
-    var room = null;
-
-    for (var i = 0; i < altp.rooms.length; i++) {
-        if (altp.rooms[i].users.length == 1) {
-            room = altp.rooms[i];
-            if (room.users[0].id != user.id) {
-                room.users.push(user);
-            }
-            break;
-        }
-    }
-
-    user.answerIndex = -1;
-
-    if (room == null) {
-        // create a new room
-        var questions = [
-            new Question('1+1=?', ['0', '1', '2', '3'], 2),
-            new Question('1+2=?', ['0', '1', '2', '3'], 3),
-            new Question('1+3=?', ['0', '4', '2', '3'], 1),
-            new Question('1+4=?', ['0', '1', '5', '3'], 2),
-            new Question('1+5=?', ['6', '1', '2', '3'], 0)
-        ];
-        room = new Room('room#' + altp.rooms.length, [user], questions);
-        altp.rooms.push(room);
-    }
-
-    room.questionIndex = 0;
-
-    altp.sock.leave(user.room);
-    user.room = room.id;
-    altp.sock.join(room.id);
-
-    var dataSearch = {
-        room: room,
-        dummyUsers: altp.dummyUsers
-    };
-
-    __io.to(room.id).emit('search', dataSearch);
-};
-
 var getUserById = function (userId) {
     for (var i = 0; i < altp.users.length; i++) {
         if (userId == altp.users[i].id) {
@@ -126,6 +273,10 @@ var getUserById = function (userId) {
     return null;
 };
 
+/**
+ * @param roomId id of room
+ * @return room object
+ * */
 var getRoomById = function (roomId) {
     for (var i = 0; i < altp.rooms.length; i++) {
         if (roomId == altp.rooms[i].id) {
