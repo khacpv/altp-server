@@ -56,3 +56,7 @@ $git remote add openshift ssh://57a368ed2d52710de4000033@altp-oic.rhcloud.com/~/
  
 #### set DEV/PROD mode
  export NODE_ENV=production (or development)
+ 
+#### see console.log
+ $rhc tail -a altp
+

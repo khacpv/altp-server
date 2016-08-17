@@ -34,7 +34,9 @@ altp.init = function (io) {
          * */
         var login = function (data) {
             var reqUser = data.user;
-            console.log('reqUsername: ' + reqUser.name);
+
+            console.log('login: ' + reqUser.name);
+
             if (!reqUser || reqUser.name.length == 0) {
                 sock.emit('login', {success: false});
                 return;
@@ -55,8 +57,6 @@ altp.init = function (io) {
             }
 
             sock.emit('login', {success: true, user: resUser});
-
-            log();
         };
 
         /**
@@ -66,6 +66,8 @@ altp.init = function (io) {
         var search = function (data) {
             var user = getUserById(data.user.id);
             var room = null;
+
+            console.log('search: '+user.name + ' searching');
 
             for (var i = 0; i < altp.rooms.length; i++) {
                 if (altp.rooms[i].users.length == 1) {
@@ -103,6 +105,8 @@ altp.init = function (io) {
                 dummyUsers: altp.dummyUsers
             };
 
+            console.log('searchCallback: room#'+dataSearch.room.id);
+
             __io.to(room.id).emit('search', dataSearch);
         };
 
@@ -115,6 +119,8 @@ altp.init = function (io) {
             var room = getRoomById(data.room.id);
             var i;
             var isAllReady = true;
+
+            console.log('play: '+ user.name + ' ready!');
 
             for(i = 0;i<room.users.length;i++){
                 if(room.users[i].id == user.id){
@@ -145,8 +151,6 @@ altp.init = function (io) {
                     count: count
                 };
 
-                console.log('send count: '+data.count);
-
                 sock.emit('play', data);
 
                 if (count <= 0) {
@@ -158,6 +162,9 @@ altp.init = function (io) {
                 var dataResponse = {
                     question: room.questions[room.questionIndex]
                 };
+
+                console.log('playCallback: question:'+ dataResponse.question.question);
+
                 __io.to(room.id).emit('play', dataResponse);
             }, 4000);
         };
@@ -170,6 +177,8 @@ altp.init = function (io) {
             var user = getUserById(data.user.id);
             var room = getRoomById(data.room.id);
             var answerIndex = data.answerIndex;
+
+            console.log('answer: '+ user.name+' answered!');
 
             for(var j = 0;j<room.users.length;j++){
                 if(room.users[j].id == user.id){
@@ -196,6 +205,9 @@ altp.init = function (io) {
                 answerRight: room.questions[room.questionIndex].answerRight,
                 answerUsers: room.users
             };
+
+            console.log('answerCallback: answerRight:'+dataResponse.answerRight);
+
             room.questionIndex++;
             __io.to(room.id).emit('answer', dataResponse);
 
@@ -213,6 +225,8 @@ altp.init = function (io) {
             var user = getUserById(data.user.id);
             var room = getRoomById(data.room.id);
 
+            console.log('answerNext: '+ user.name+' get nextQuestion');
+
             for(var i = 0;i<room.users.length;i++){
                 room.users[i].answerIndex = -1;
             }
@@ -220,6 +234,9 @@ altp.init = function (io) {
             var dataResponse = {
                 question: room.questions[room.questionIndex]
             };
+
+            console.log('answerNextCallback: '+ dataResponse.question.question);
+
             __io.to(room.id).emit('answerNext', dataResponse);
         };
 
@@ -231,6 +248,8 @@ altp.init = function (io) {
             var user = getUserById(data.user.id);
             var room = getRoomById(data.room.id);
 
+            console.log('gameOver: '+user.name);
+
             for(var k = 0;k<room.users.length;k++){
                 room.users[k].answerIndex = -1;
             }
@@ -240,6 +259,9 @@ altp.init = function (io) {
             var dataResponse = {
                 users: room.users
             };
+
+            console.log('gameOverCallback: total users: '+ dataResponse.users.length);
+
             __io.to(room.id).emit('gameOver',dataResponse);
         };
 
@@ -250,12 +272,6 @@ altp.init = function (io) {
         socket.on('answerNext', answerNext);
         socket.on('gameOver', gameOver);
     });
-};
-
-var log = function () {
-    console.log('total users: ' + altp.users.map(function (user) {
-            return user.name;
-        }).join(','));
 };
 
 /************** UTILITIES **************/
