@@ -91,14 +91,16 @@ altp.init = function (io) {
                 ];
                 room = new Room('room#' + altp.rooms.length, [user], questions);
                 altp.rooms.push(room);
-            }else{
-                // refresh state users
-                for(i = 0;i<room.users.length;i++){
-                    room.users[i].ready = false;
-                    room.users[i].answerIndex = -1;
-                }
             }
 
+            // refresh state users
+            for(i = 0;i<room.users.length;i++){
+                room.users[i].ready = false;
+                room.users[i].answerIndex = -1;
+
+            }
+
+            room.answerRight = 0;
             room.questionIndex = 0;
 
             sock.leave(user.room);
