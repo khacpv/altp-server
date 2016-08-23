@@ -66,10 +66,11 @@ altp.init = function (io) {
         var search = function (data) {
             var user = getUserById(data.user.id);
             var room = null;
+            var i;
 
             console.log('search: ' + user.name + ' searching');
 
-            for (var i = 0; i < altp.rooms.length; i++) {
+            for (i=0; i < altp.rooms.length; i++) {
                 if (altp.rooms[i].users.length == 1) {
                     room = altp.rooms[i];
                     if (room.users[0].id != user.id) {
@@ -78,8 +79,6 @@ altp.init = function (io) {
                     break;
                 }
             }
-
-            user.answerIndex = -1;
 
             if (room == null) {
                 // create a new room
@@ -92,6 +91,12 @@ altp.init = function (io) {
                 ];
                 room = new Room('room#' + altp.rooms.length, [user], questions);
                 altp.rooms.push(room);
+            }else{
+                // refresh state users
+                for(i = 0;i<room.users.length;i++){
+                    room.users[i].ready = false;
+                    room.users[i].answerIndex = -1;
+                }
             }
 
             room.questionIndex = 0;
