@@ -67,7 +67,7 @@ altp.init = function (io) {
             var user = getUserById(data.user.id);
             var room = null;
 
-            console.log('search: '+user.name + ' searching');
+            console.log('search: ' + user.name + ' searching');
 
             for (var i = 0; i < altp.rooms.length; i++) {
                 if (altp.rooms[i].users.length == 1) {
@@ -84,11 +84,11 @@ altp.init = function (io) {
             if (room == null) {
                 // create a new room
                 var questions = [
-                    new Question('1+1=?', ['0', '1', '2', '3'], 2),
-                    new Question('1+2=?', ['0', '1', '2', '3'], 3),
-                    new Question('1+3=?', ['0', '4', '2', '3'], 1),
-                    new Question('1+4=?', ['0', '1', '5', '3'], 2),
-                    new Question('1+5=?', ['6', '1', '2', '3'], 0)
+                    new Question('1+1=?', ['0', '1', '2', '3'], 2, 0),
+                    new Question('1+2=?', ['0', '1', '2', '3'], 3, 1),
+                    new Question('1+3=?', ['0', '4', '2', '3'], 1, 2),
+                    new Question('1+4=?', ['0', '1', '5', '3'], 2, 3),
+                    new Question('1+5=?', ['6', '1', '2', '3'], 0, 4)
                 ];
                 room = new Room('room#' + altp.rooms.length, [user], questions);
                 altp.rooms.push(room);
@@ -105,7 +105,7 @@ altp.init = function (io) {
                 dummyUsers: altp.dummyUsers
             };
 
-            console.log('searchCallback: room#'+dataSearch.room.id);
+            console.log('searchCallback: room#' + dataSearch.room.id);
 
             __io.to(room.id).emit('search', dataSearch);
         };
@@ -114,31 +114,31 @@ altp.init = function (io) {
          * user click play after search
          * @param data = {user.id, room.id}
          * */
-        var play = function(data){
+        var play = function (data) {
             var user = getUserById(data.user.id);
             var room = getRoomById(data.room.id);
             var i;
             var isAllReady = true;
 
-            console.log('play: '+ user.name + ' ready!');
+            console.log('play: ' + user.name + ' ready!');
 
-            for(i = 0;i<room.users.length;i++){
-                if(room.users[i].id == user.id){
+            for (i = 0; i < room.users.length; i++) {
+                if (room.users[i].id == user.id) {
                     room.users[i].ready = true;
                     break;
                 }
             }
 
-            for(i = 0;i<room.users.length;i++){
-                if(!room.users[i].ready){
+            for (i = 0; i < room.users.length; i++) {
+                if (!room.users[i].ready) {
                     isAllReady = false;
                     break;
                 }
             }
 
             // if others user is not ready --> show waiting dialog
-            if(!isAllReady){
-                sock.emit('play',{notReady: true});
+            if (!isAllReady) {
+                sock.emit('play', {notReady: true});
                 return;
             }
 
@@ -163,7 +163,7 @@ altp.init = function (io) {
                     question: room.questions[room.questionIndex]
                 };
 
-                console.log('playCallback: question:'+ dataResponse.question.question);
+                console.log('playCallback: question:' + dataResponse.question.question);
 
                 __io.to(room.id).emit('play', dataResponse);
             }, 4000);
@@ -173,31 +173,32 @@ altp.init = function (io) {
          * user answer an question
          * @param data = {user.id, room.id, answerIndex}
          * */
-        var answer = function(data){
+        var answer = function (data) {
             var user = getUserById(data.user.id);
             var room = getRoomById(data.room.id);
             var answerIndex = data.answerIndex;
 
-            console.log('answer: '+ user.name+' answered!');
+            console.log('answer: ' + user.name + ' answered!');
 
-            for(var j = 0;j<room.users.length;j++){
-                if(room.users[j].id == user.id){
+            for (var j = 0; j < room.users.length; j++) {
+                if (room.users[j].id == user.id) {
                     user.answerIndex = answerIndex;
+                    room.users[j].answerIndex = answerIndex;
                     break;
                 }
             }
 
             var isAllAnswered = true;
 
-            for(var i = 0;i<room.users.length;i++){
-                if(room.users[i].answerIndex < 0){
+            for (var i = 0; i < room.users.length; i++) {
+                if (room.users[i].answerIndex < 0) {
                     isAllAnswered = false;
                     break;
                 }
             }
 
-            if(!isAllAnswered){
-                __io.to(room.id).emit('answer',{notAllAnswered:true});
+            if (!isAllAnswered) {
+                __io.to(room.id).emit('answer', {notAllAnswered: true});
                 return;
             }
 
@@ -206,13 +207,13 @@ altp.init = function (io) {
                 answerUsers: room.users
             };
 
-            console.log('answerCallback: answerRight:'+dataResponse.answerRight);
+            console.log('answerCallback: answerRight:' + dataResponse.answerRight);
 
             room.questionIndex++;
             __io.to(room.id).emit('answer', dataResponse);
 
             // game over
-            if(room.questionIndex == room.questions.length){
+            if (room.questionIndex == room.questions.length) {
                 gameOver(data);
             }
         };
@@ -221,13 +222,26 @@ altp.init = function (io) {
          * get next question
          * @param data = {user.id, room.id}
          * */
-        var answerNext = function(data){
+        var answerNext = function (data) {
             var user = getUserById(data.user.id);
             var room = getRoomById(data.room.id);
 
-            console.log('answerNext: '+ user.name+' get nextQuestion');
+            console.log('answerNext: ' + user.name + ' get nextQuestion');
 
-            for(var i = 0;i<room.users.length;i++){
+            var numUserAnswer = 0;
+            var i;
+            for (i = 0; i < room.users.length; i++) {
+                if (room.users[i].answerIndex > -1) {
+                    numUserAnswer++;
+                }
+            }
+
+            // if all users doesn't answer, not fired event callback
+            if (numUserAnswer < 2) {
+                return;
+            }
+
+            for (i = 0; i < room.users.length; i++) {
                 room.users[i].answerIndex = -1;
             }
 
@@ -235,7 +249,7 @@ altp.init = function (io) {
                 question: room.questions[room.questionIndex]
             };
 
-            console.log('answerNextCallback: '+ dataResponse.question.question);
+            console.log('answerNextCallback: ' + dataResponse.question.question);
 
             __io.to(room.id).emit('answerNext', dataResponse);
         };
@@ -244,13 +258,13 @@ altp.init = function (io) {
          * the game over, called by answer()
          * @param data = {user.id, room.id}
          * */
-        var gameOver = function(data){
+        var gameOver = function (data) {
             var user = getUserById(data.user.id);
             var room = getRoomById(data.room.id);
 
-            console.log('gameOver: '+user.name);
+            console.log('gameOver: ' + user.name);
 
-            for(var k = 0;k<room.users.length;k++){
+            for (var k = 0; k < room.users.length; k++) {
                 room.users[k].answerIndex = -1;
             }
 
@@ -260,9 +274,9 @@ altp.init = function (io) {
                 users: room.users
             };
 
-            console.log('gameOverCallback: total users: '+ dataResponse.users.length);
+            console.log('gameOverCallback: total users: ' + dataResponse.users.length);
 
-            __io.to(room.id).emit('gameOver',dataResponse);
+            __io.to(room.id).emit('gameOver', dataResponse);
         };
 
         socket.on('login', login);
