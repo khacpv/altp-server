@@ -152,31 +152,13 @@ altp.init = function (io) {
                 return;
             }
 
-            var count = 4;
+            var dataResponse = {
+                question: room.questions[room.questionIndex]
+            };
 
-            var countInterval = setInterval(function () {
-                count = count - 1;
+            console.log('playCallback: question:' + dataResponse.question.question);
 
-                var data = {
-                    count: count
-                };
-
-                sock.emit('play', data);
-
-                if (count <= 0) {
-                    clearInterval(countInterval);
-                }
-            }, 1000);
-
-            setTimeout(function () {
-                var dataResponse = {
-                    question: room.questions[room.questionIndex]
-                };
-
-                console.log('playCallback: question:' + dataResponse.question.question);
-
-                __io.to(room.id).emit('play', dataResponse);
-            }, 4000);
+            __io.to(room.id).emit('play', dataResponse);
         };
 
         /**
