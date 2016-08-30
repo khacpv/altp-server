@@ -30,6 +30,7 @@ App.room = '';
 App.questionIndex = 0;
 
 App.login = function () {
+    App.user.id = $('#name').val();
     App.user.name = $('#name').val();
     App.user.address = $('#address').val();
     App.user.fbId = 'YOUR_FB_ID_HERE';

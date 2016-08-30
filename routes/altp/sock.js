@@ -52,7 +52,7 @@ altp.init = function (io) {
                 }
             }
             if (!isExist) {
-                resUser = new User((Math.random() * 10000000) | 0, reqUser.name || '', reqUser.address || '', reqUser.fbId || -1, reqUser.avatar || '');
+                resUser = new User(reqUser.id || (Math.random() * 10000000), reqUser.name || '', reqUser.address || '', reqUser.fbId || -1, reqUser.avatar || '');
                 altp.users.unshift(resUser); // push to beginning
             }
 
@@ -68,15 +68,18 @@ altp.init = function (io) {
             var room = null;
             var i;
 
-            console.log('search: ' + user.name + ' searching');
+            console.log('search: JSON user: '+JSON.stringify(data.user));
 
-            for (i=0; i < altp.rooms.length; i++) {
+            console.log('search: ' + user.id + ' searching');
+
+            for (i = 0; i < altp.rooms.length; i++) {
                 if (altp.rooms[i].users.length == 1) {
-                    room = altp.rooms[i];
-                    if (room.users[0].id != user.id) {
+                    if (altp.rooms[i].users[0].id != user.id) {
+                        console.log('user id: '+altp.rooms[i].users[0].id + ' name:'+altp.rooms[i].users[0].name);
+                        room = altp.rooms[i];
                         room.users.push(user);
+                        break;
                     }
-                    break;
                 }
             }
 
@@ -94,7 +97,7 @@ altp.init = function (io) {
             }
 
             // refresh state users
-            for(i = 0;i<room.users.length;i++){
+            for (i = 0; i < room.users.length; i++) {
                 room.users[i].ready = false;
                 room.users[i].answerIndex = -1;
 
@@ -112,7 +115,7 @@ altp.init = function (io) {
                 dummyUsers: altp.dummyUsers
             };
 
-            console.log('searchCallback: room#' + dataSearch.room.id);
+            console.log('searchCallback: room:' + dataSearch.room.id + ' with user:' + room.users.length);
 
             __io.to(room.id).emit('search', dataSearch);
         };
@@ -303,7 +306,7 @@ altp.init = function (io) {
  * */
 var getUserById = function (userId) {
     for (var i = 0; i < altp.users.length; i++) {
-        if (userId == altp.users[i].id) {
+        if (userId === altp.users[i].id) {
             return altp.users[i];
         }
     }
