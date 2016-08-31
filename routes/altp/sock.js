@@ -68,7 +68,7 @@ altp.init = function (io) {
             var room = null;
             var i;
 
-            console.log('search: ' + user.id + ' searching');
+            console.log('search: ' + JSON.stringify(user) + ' searching');
 
             for (i = 0; i < altp.rooms.length; i++) {
                 if (altp.rooms[i].users.length == 1) {
