@@ -98,7 +98,7 @@ altp.init = function (io) {
             for (i = 0; i < room.users.length; i++) {
                 room.users[i].ready = false;
                 room.users[i].answerIndex = -1;
-
+                room.users[i].score = 0;
             }
 
             room.answerRight = 0;
@@ -168,7 +168,8 @@ altp.init = function (io) {
             var room = getRoomById(data.room.id);
             var answerIndex = data.answerIndex;
 
-            var i = 0;
+            var i;
+            var dataResponse;
 
             console.log('answer: ' + user.name + ' answered!');
 
@@ -194,21 +195,54 @@ altp.init = function (io) {
                 return;
             }
 
-            // calculate score
+            // calculate gameOver
+            var hasOneWrong = false;    // game over if has less 1 user answers wrong
+            var answerRightIndex = room.questions[room.questionIndex].answerRight;
+            var winnerUser;
+
+            // user 1 win
+            if(answerRightIndex == room.users[0].answerIndex
+                && answerRightIndex != room.users[1].answerIndex){
+                winnerUser = getUserById(room.users[0].id);
+
+                room.users[0].score = addScore(winnerUser.score, 100);
+                hasOneWrong = true;
+            }
+            // user 2 win
+            else if(answerRightIndex != room.users[0].answerIndex
+                && answerRightIndex == room.users[1].answerIndex){
+                winnerUser = getUserById(room.users[1].id);
+                room.users[1].score = addScore(winnerUser.score, 100);
+                hasOneWrong = true;
+            }
+            // draw: both wrong
+            else if(answerRightIndex != room.users[0].answerIndex
+                && answerRightIndex != room.users[1].answerIndex){
+                hasOneWrong = true;
+            }
+
+            if(hasOneWrong){
+                dataResponse = {
+                    user: user,
+                    room: room
+                };
+
+                gameOver(dataResponse);
+                return;
+            }
+
+            // calculate next question
+            var tmpUser;
+
             for (i = 0; i < room.users.length; i++) {
                 if (room.questions[room.questionIndex].answerRight == room.users[i].answerIndex) {
-                    var _user = getUserById(room.users[i].id);
-                    room.users[i].score = _user.score = _user.score + 100;
-                    console.log('answer: score ' + _user.name + ' has score: ' + _user.score);
-                }
-                else {
-                    // game over if 1 player answers wrong
-                    gameOver(data);
-                    return;
+                    tmpUser = getUserById(room.users[i].id);
+                    room.users[i].score = addScore(tmpUser.score, 100);
+                    console.log('answer: score ' + tmpUser.name + ' has score: ' + tmpUser.score);
                 }
             }
 
-            var dataResponse = {
+            dataResponse = {
                 answerRight: room.questions[room.questionIndex].answerRight,
                 answerUsers: room.users
             };
@@ -286,7 +320,15 @@ altp.init = function (io) {
         };
 
         var quit = function (data) {
-            gameOver(data);
+            var user = getUserById(data.user.id);
+            var room = getRoomById(data.room.id);
+
+            var dataResponse = {
+                user: user,
+                room: room
+            };
+
+            __io.to(room.id).emit('quit', dataResponse);
         };
 
         socket.on('login', login);
@@ -302,10 +344,20 @@ altp.init = function (io) {
 /************** UTILITIES **************/
 
 /**
+ * add score to user
+ * @return user object
+ * */
+var addScore = function(user, score){
+    user.score += score;
+    return user;
+};
+
+/**
  * @param userId id of user
  * @return user object
  * */
 var getUserById = function (userId) {
+    console.log("users: "+JSON.stringify(altp.users));
     for (var i = 0; i < altp.users.length; i++) {
         if (userId === altp.users[i].id) {
             return altp.users[i];

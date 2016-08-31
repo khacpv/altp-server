@@ -6,6 +6,7 @@ var User = function(id, name, address, fbId, avatar){
     this.fbId = fbId;
     this.room = '';     // current room id
     this.score = 0;
+    this.totalScore = 0;
 
     this.toString = function () {
         return this.id + '#' + name;
