@@ -4,7 +4,7 @@ var User = function(id, name, address, fbId, avatar){
     this.avatar = avatar;
     this.address = address;
     this.fbId = fbId;
-    this.room = '';     // current room
+    this.room = '';     // current room id
     this.score = 0;
 
     this.toString = function () {

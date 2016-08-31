@@ -68,9 +68,12 @@ altp.init = function (io) {
             var room = null;
             var i;
 
-            console.log('search: JSON user: '+JSON.stringify(data.user));
-
             console.log('search: ' + user.id + ' searching');
+
+            if(user.room && user.room.length > 0){
+                console.log('search: leave room: '+ user.room);
+                sock.leave(user.room);
+            }
 
             for (i = 0; i < altp.rooms.length; i++) {
                 if (altp.rooms[i].users.length == 1) {
@@ -170,6 +173,8 @@ altp.init = function (io) {
             var room = getRoomById(data.room.id);
             var answerIndex = data.answerIndex;
 
+            var i=0;
+
             console.log('answer: ' + user.name + ' answered!');
 
             for (var j = 0; j < room.users.length; j++) {
@@ -182,7 +187,7 @@ altp.init = function (io) {
 
             var isAllAnswered = true;
 
-            for (var i = 0; i < room.users.length; i++) {
+            for (i = 0; i < room.users.length; i++) {
                 if (room.users[i].answerIndex < 0) {
                     isAllAnswered = false;
                     break;
@@ -192,6 +197,15 @@ altp.init = function (io) {
             if (!isAllAnswered) {
                 __io.to(room.id).emit('answer', {notAllAnswered: true});
                 return;
+            }
+
+            // calculate score
+            for (i = 0; i< room.users.length; i++){
+                if(room.questions[room.questionIndex].answerRight == room.users[i].answerIndex){
+                    var _user = getUserById(room.users[i].id);
+                    room.users[i].score = _user.score = _user.score + 100;
+                    console.log('answer: score '+ _user.name + ' has score: '+_user.score);
+                }
             }
 
             var dataResponse = {
