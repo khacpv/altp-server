@@ -70,11 +70,6 @@ altp.init = function (io) {
 
             console.log('search: ' + user.id + ' searching');
 
-            if(user.room && user.room.length > 0){
-                console.log('search: leave room: '+ user.room);
-                sock.leave(user.room);
-            }
-
             for (i = 0; i < altp.rooms.length; i++) {
                 if (altp.rooms[i].users.length == 1) {
                     if (altp.rooms[i].users[0].id != user.id) {
