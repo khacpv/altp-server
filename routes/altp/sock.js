@@ -73,7 +73,7 @@ altp.init = function (io) {
             for (i = 0; i < altp.rooms.length; i++) {
                 if (altp.rooms[i].users.length == 1) {
                     if (altp.rooms[i].users[0].id != user.id) {
-                        console.log('user id: '+altp.rooms[i].users[0].id + ' name:'+altp.rooms[i].users[0].name);
+                        console.log('user id: ' + altp.rooms[i].users[0].id + ' name:' + altp.rooms[i].users[0].name);
                         room = altp.rooms[i];
                         room.users.push(user);
                         break;
@@ -168,7 +168,7 @@ altp.init = function (io) {
             var room = getRoomById(data.room.id);
             var answerIndex = data.answerIndex;
 
-            var i=0;
+            var i = 0;
 
             console.log('answer: ' + user.name + ' answered!');
 
@@ -195,11 +195,16 @@ altp.init = function (io) {
             }
 
             // calculate score
-            for (i = 0; i< room.users.length; i++){
-                if(room.questions[room.questionIndex].answerRight == room.users[i].answerIndex){
+            for (i = 0; i < room.users.length; i++) {
+                if (room.questions[room.questionIndex].answerRight == room.users[i].answerIndex) {
                     var _user = getUserById(room.users[i].id);
                     room.users[i].score = _user.score = _user.score + 100;
-                    console.log('answer: score '+ _user.name + ' has score: '+_user.score);
+                    console.log('answer: score ' + _user.name + ' has score: ' + _user.score);
+                }
+                else {
+                    // game over if 1 player answers wrong
+                    gameOver(data);
+                    return;
                 }
             }
 
@@ -280,12 +285,17 @@ altp.init = function (io) {
             __io.to(room.id).emit('gameOver', dataResponse);
         };
 
+        var quit = function (data) {
+            gameOver(data);
+        };
+
         socket.on('login', login);
         socket.on('search', search);
         socket.on('play', play);
         socket.on('answer', answer);
         socket.on('answerNext', answerNext);
         socket.on('gameOver', gameOver);
+        socket.on('quit', quit);
     });
 };
 
