@@ -43,7 +43,7 @@ altp.init = function (io) {
                 return;
             }
             getUserById(reqUser.id, function (err, user) {
-                if (err != null) {
+                if (user == null) {
                     user = new User(
                         reqUser.id || (Math.random() * 10000000),
                         reqUser.name || '',
@@ -51,9 +51,12 @@ altp.init = function (io) {
                         reqUser.fbId || -1,
                         reqUser.avatar || '');
 
-                    mongoDb.users.insert(user);
-                }
+                    mongoDb.users.insert(user, function(err, user){
+                        console.log('login:insert:user:'+JSON.stringify(user));
+                        console.log('login:insert:err:'+JSON.stringify(err));
 
+                    });
+                }
                 sock.emit('login', {success: true, user: user});
             });
         };
