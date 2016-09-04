@@ -3,7 +3,7 @@ var mongojs = require('mongojs');
 var Mongo = {};
 
 Mongo.IP = process.env.OPENSHIFT_MONGODB_DB_HOST || '127.0.0.1';
-Mongo.PORT = process.env.OPENSHIFT_MONGODB_DB_PORT || '52086';
+Mongo.PORT = process.env.OPENSHIFT_MONGODB_DB_PORT || '40426';
 Mongo.dbName = process.env.OPENSHIFT_APP_NAME || 'altp';
 Mongo.user = process.env.OPENSHIFT_MONGODB_DB_USERNAME || 'admin';
 Mongo.pass = process.env.OPENSHIFT_MONGODB_DB_PASSWORD || 'Jnav2De-XvhE';

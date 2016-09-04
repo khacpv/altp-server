@@ -49,7 +49,7 @@ $git remote add openshift ssh://57a368ed2d52710de4000033@altp-oic.rhcloud.com/~/
  $rhc show-app image --gears quota
 
 #### port forwarding (use remote database on local computer)
- $rhc port-forward image
+ $rhc port-forward altp
  
 #### root directory
  /var/lib/openshift/5766b0f50c1e6601a800014e
