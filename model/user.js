@@ -1,4 +1,5 @@
 var User = function(id, name, address, fbId, avatar){
+    this._id = '';
     this.id = id;
     this.name = name;
     this.avatar = avatar;

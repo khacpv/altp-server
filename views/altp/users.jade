@@ -1,0 +1,16 @@
+extends ../layout
+block header
+   link(rel='stylesheet', href='/libraries/bootstrap/css/bootstrap.min.css')
+   link(rel='stylesheet', href='//code.jquery.com/ui/1.10.4/themes/redmond/jquery-ui.css')
+   script(src='/libraries/jquery/jquery.min.js')
+   script(src='//code.jquery.com/ui/1.11.0/jquery-ui.js')
+   script(src='/libraries/bootstrap/js/bootstrap.min.js')
+   script(src='/altp/users/users.js')
+block content
+   div.content
+      ul.users
+         each user in users
+            li= JSON.stringify(user)
+            li
+               button(onClick="deleteUserById('#{user._id}')") Delete #{user.name}
+               button(onClick="updateUserById('#{user._id}')") Update #{user.name}
