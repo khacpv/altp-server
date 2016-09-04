@@ -16,13 +16,12 @@ Mongo.connectionString = function () {
         Mongo.dbName;
 };
 
-var db = mongojs(Mongo.connectionString(), ['altp','users', 'questions']);
+var db = mongojs(Mongo.connectionString(), ['altp','users']);
 var altp = db.collection('altp');
 var users = db.collection('users');
-var questions = db.collection('questions');
 
 Mongo.db = db;
 Mongo.altp = altp;
-Mongo.questions = questions;
+Mongo.users = users;
 
 module.exports = Mongo;
