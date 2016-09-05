@@ -215,7 +215,8 @@ altp.init = function (io) {
                 if (answerRightIndex == room.users[0].answerIndex
                     && answerRightIndex != room.users[1].answerIndex) {
                     getUserById(room.users[0].id, function(err, winnerUser){
-                        addScore(winnerUser.score, 100);
+                        addScore(winnerUser, 100);
+                        addScore(room.users[0], 100);
 
                         dataResponse = {
                             user: user,
@@ -230,7 +231,8 @@ altp.init = function (io) {
                 else if (answerRightIndex != room.users[0].answerIndex
                     && answerRightIndex == room.users[1].answerIndex) {
                     getUserById(room.users[1].id, function(err, winnerUser){
-                        addScore(winnerUser.score, 100);
+                        addScore(winnerUser, 100);
+                        addScore(room.users[1], 100);
                         dataResponse = {
                             user: user,
                             room: room
@@ -373,7 +375,6 @@ altp.init = function (io) {
  * */
 var addScore = function (user, score) {
     user.score += score;
-    return user;
 };
 
 /**
