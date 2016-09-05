@@ -207,32 +207,43 @@ altp.init = function (io) {
                 }
 
                 // calculate gameOver
-                var hasOneWrong = false;    // game over if has less 1 user answers wrong
                 var answerRightIndex = room.questions[room.questionIndex].answerRight;
-                var winnerUser;
+
+                console.log('test user:'+JSON.stringify(room));
 
                 // user 1 win
                 if (answerRightIndex == room.users[0].answerIndex
                     && answerRightIndex != room.users[1].answerIndex) {
-                    winnerUser = getUserById(room.users[0].id);
+                    getUserById(room.users[0].id, function(err, winnerUser){
+                        addScore(winnerUser.score, 100);
 
-                    room.users[0].score = addScore(winnerUser.score, 100);
-                    hasOneWrong = true;
+                        dataResponse = {
+                            user: user,
+                            room: room
+                        };
+
+                        gameOver(dataResponse);
+                    });
+                    return;
                 }
                 // user 2 win
                 else if (answerRightIndex != room.users[0].answerIndex
                     && answerRightIndex == room.users[1].answerIndex) {
-                    winnerUser = getUserById(room.users[1].id);
-                    room.users[1].score = addScore(winnerUser.score, 100);
-                    hasOneWrong = true;
+                    getUserById(room.users[1].id, function(err, winnerUser){
+                        addScore(winnerUser.score, 100);
+                        dataResponse = {
+                            user: user,
+                            room: room
+                        };
+
+                        gameOver(dataResponse);
+                    });
+                    return;
                 }
                 // draw: both wrong
                 else if (answerRightIndex != room.users[0].answerIndex
                     && answerRightIndex != room.users[1].answerIndex) {
-                    hasOneWrong = true;
-                }
 
-                if (hasOneWrong) {
                     dataResponse = {
                         user: user,
                         room: room
