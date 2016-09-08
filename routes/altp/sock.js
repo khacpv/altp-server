@@ -51,9 +51,9 @@ altp.init = function (io) {
                         reqUser.fbId || -1,
                         reqUser.avatar || '');
 
-                    mongoDb.users.insert(user, function(err, user){
-                        console.log('login:insert:user:'+JSON.stringify(user));
-                        console.log('login:insert:err:'+JSON.stringify(err));
+                    mongoDb.users.insert(user, function (err, user) {
+                        console.log('login:insert:user:' + JSON.stringify(user));
+                        console.log('login:insert:err:' + JSON.stringify(err));
 
                     });
                 }
@@ -182,7 +182,7 @@ altp.init = function (io) {
                 var i;
                 var dataResponse;
 
-                console.log('answer: ' + user.name + ' answered!');
+                //console.log('answer: ' + user.name + ' answered '+data.answerIndex);
 
                 for (var j = 0; j < room.users.length; j++) {
                     if (room.users[j].id == user.id) {
@@ -206,15 +206,16 @@ altp.init = function (io) {
                     return;
                 }
 
+                console.log('user ' + room.users[0].name + ' answered: ' + room.users[0].answerIndex);
+                console.log('user ' + room.users[1].name + ' answered: ' + room.users[1].answerIndex);
+
                 // calculate gameOver
                 var answerRightIndex = room.questions[room.questionIndex].answerRight;
-
-                console.log('test user:'+JSON.stringify(room));
 
                 // user 1 win
                 if (answerRightIndex == room.users[0].answerIndex
                     && answerRightIndex != room.users[1].answerIndex) {
-                    getUserById(room.users[0].id, function(err, winnerUser){
+                    getUserById(room.users[0].id, function (err, winnerUser) {
                         addScore(winnerUser, 100);
                         addScore(room.users[0], 100);
 
@@ -230,7 +231,7 @@ altp.init = function (io) {
                 // user 2 win
                 else if (answerRightIndex != room.users[0].answerIndex
                     && answerRightIndex == room.users[1].answerIndex) {
-                    getUserById(room.users[1].id, function(err, winnerUser){
+                    getUserById(room.users[1].id, function (err, winnerUser) {
                         addScore(winnerUser, 100);
                         addScore(room.users[1], 100);
                         dataResponse = {
@@ -258,7 +259,7 @@ altp.init = function (io) {
                 // next question
                 for (i = 0; i < room.users.length; i++) {
                     if (room.questions[room.questionIndex].answerRight == room.users[i].answerIndex) {
-                        room.users[i] = addScore(room.users[i], 100);
+                        addScore(room.users[i], 100);
                     }
                 }
 
@@ -327,12 +328,6 @@ altp.init = function (io) {
                 var room = getRoomById(data.room.id);
 
                 console.log('gameOver: ' + user.name);
-
-                for (var k = 0; k < room.users.length; k++) {
-                    room.users[k].answerIndex = -1;
-                }
-
-                room.questionIndex = 0;
 
                 var dataResponse = {
                     users: room.users
