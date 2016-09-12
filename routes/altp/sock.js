@@ -220,6 +220,7 @@ altp.init = function (io) {
                         addScore(room.users[0], 100);
 
                         dataResponse = {
+                            answerRight: room.questions[room.questionIndex].answerRight,
                             user: user,
                             room: room
                         };
@@ -235,6 +236,7 @@ altp.init = function (io) {
                         addScore(winnerUser, 100);
                         addScore(room.users[1], 100);
                         dataResponse = {
+                            answerRight: room.questions[room.questionIndex].answerRight,
                             user: user,
                             room: room
                         };
@@ -248,6 +250,7 @@ altp.init = function (io) {
                     && answerRightIndex != room.users[1].answerIndex) {
 
                     dataResponse = {
+                        answerRight: room.questions[room.questionIndex].answerRight,
                         user: user,
                         room: room
                     };
@@ -333,11 +336,11 @@ altp.init = function (io) {
                 console.log('gameOver: ' + user.name);
 
                 var dataResponse = data;
-                dataResponse.answerRight = room.questions[room.questionIndex].answerRight;
+                dataResponse.answerRight = data.answerRight;
                 dataResponse.users = room.users;
                 dataResponse.room = room;
 
-                console.log('gameOverCallback: total users: ' + dataResponse.users.length);
+                console.log('gameOverCallback: total users: ' + JSON.stringify(dataResponse));
 
                 __io.to(room.id).emit('gameOver', dataResponse);
             });
