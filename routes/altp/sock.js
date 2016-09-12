@@ -90,42 +90,43 @@ altp.init = function (io) {
                     }
                 }
 
-                if (room == null) {
-                    // create a new room
-                    //var questions = [
-                    //    new Question('1+1=?', ['0', '1', '2', '3'], 2, 0),
-                    //    new Question('1+2=?', ['0', '1', '2', '3'], 3, 1),
-                    //    new Question('1+3=?', ['0', '4', '2', '3'], 1, 2),
-                    //    new Question('1+4=?', ['0', '1', '5', '3'], 2, 3),
-                    //    new Question('1+5=?', ['6', '1', '2', '3'], 0, 4)
-                    //];
-                    var questions = getRandomQuestion();
-                    room = new Room('room#' + altp.rooms.length, [user], questions);
-                    altp.rooms.push(room);
-                }
+                var processRoom = function(room){
+                    // refresh state users
+                    for (i = 0; i < room.users.length; i++) {
+                        room.users[i].ready = false;
+                        room.users[i].answerIndex = -1;
+                        room.users[i].score = 0;
+                    }
 
-                // refresh state users
-                for (i = 0; i < room.users.length; i++) {
-                    room.users[i].ready = false;
-                    room.users[i].answerIndex = -1;
-                    room.users[i].score = 0;
-                }
+                    room.answerRight = 0;
+                    room.questionIndex = 0;
 
-                room.answerRight = 0;
-                room.questionIndex = 0;
+                    sock.leave(user.room);
+                    user.room = room.id;
+                    sock.join(room.id);
 
-                sock.leave(user.room);
-                user.room = room.id;
-                sock.join(room.id);
+                    var dataSearch = {
+                        room: room,
+                        dummyUsers: altp.dummyUsers
+                    };
 
-                var dataSearch = {
-                    room: room,
-                    dummyUsers: altp.dummyUsers
+                    console.log('searchCallback: room:' + dataSearch.room.id + ' with user:' + room.users.length);
+
+                    __io.to(room.id).emit('search', dataSearch);
                 };
 
-                console.log('searchCallback: room:' + dataSearch.room.id + ' with user:' + room.users.length);
+                if (room != null) {
+                    processRoom(room);
+                    return;
+                }
 
-                __io.to(room.id).emit('search', dataSearch);
+                // create a new room
+                getRandomQuestion(function(questions){
+                    room = new Room('room#' + altp.rooms.length, [user], questions);
+                    altp.rooms.push(room);
+
+                    processRoom(room);
+                });
             });
         };
 
@@ -406,23 +407,28 @@ var getRoomById = function (roomId) {
 /**
  * get random 15 questions from database
  * */
-var getRandomQuestion = function () {
+var getRandomQuestion = function (callback) {
+    var QUESTION_NUMBERS = 15;
     var questions = [];
     // using: abc.find({ _id: ObjectId(req.params.id) }, function(...) { ... });
 
     // get one question for each level (1... 15)
-    for (var i = 1; i <= 15; i++) {
+    for (var i = 1; i <= QUESTION_NUMBERS; i++) {
         var query = {
             level: i
         };
         var n = mongoDb.questions.count(query);
         var r = Math.floor(Math.random() * n);
-        var item = mongoDb.questions.find(query).limit(1).skip(r);
-        var question = new Question(item.question, item.answers, item.answerRight, i);
-        questions.push(question);
-    }
+        mongoDb.questions.find(query).limit(1).skip(r, function(err, item){
 
-    return questions;
+            var question = new Question(item.question, item.answers, item.answerRight-1, i-1);
+            questions.push(question);
+
+            if(questions.length == QUESTION_NUMBERS){
+                callback(questions);
+            }
+        });
+    }
 };
 
 module.exports = altp;
