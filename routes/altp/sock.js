@@ -420,6 +420,9 @@ var getRandomQuestion = function (callback) {
             level: i
         };
         var n = mongoDb.questions.count(query);
+
+        console.log('count: '+n+' questions');
+
         var r = Math.floor(Math.random() * n);
         mongoDb.questions.findOne(query, function(err, item){
 
