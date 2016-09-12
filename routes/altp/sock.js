@@ -425,7 +425,7 @@ var getRandomQuestion = function (callback) {
 
         mongoDb.questions.findOne(query, function(err, item){
 
-            var question = new Question(item.question, item.answers, item.answerRight-1, item.level);
+            var question = new Question(item.question, item.answers, item.answerRight-1, Math.floor(item.level));
             questions.push(question);
 
             console.log('from db: '+ JSON.stringify(question));
