@@ -414,28 +414,25 @@ var getRandomQuestion = function (callback) {
     var questions = [];
     // using: abc.find({ _id: ObjectId(req.params.id) }, function(...) { ... });
 
-    var query = {
-        level: 1+''
-    };
-
     // get one question for each level (1... 15)
     for (var i = 1; i <= QUESTION_NUMBERS; i++) {
-        query.level = i + '';
-        mongoDb.questions.count(query, function(err, n){
-            console.log('count: '+n+' questions');
-            var r = Math.floor(Math.random() * n);
+        var query = {
+            level: i+''
+        };
+        mongoDb.questions.count(query, function(err, value){
+            console.log('count: '+value+' questions');
+        });
 
-            mongoDb.questions.find(query).limit(1).skip(r, function(err, item){
+        mongoDb.questions.findOne(query, function(err, item){
 
-                var question = new Question(item.question, item.answers, item.answerRight-1, Math.floor(item.level));
-                questions.push(question);
+            var question = new Question(item.question, item.answers, item.answerRight-1, Math.floor(item.level);
+            questions.push(question);
 
-                console.log('from db: '+ JSON.stringify(question));
+            console.log('from db: '+ JSON.stringify(question));
 
-                if(questions.length == QUESTION_NUMBERS){
-                    callback(questions);
-                }
-            });
+            if(questions.length == QUESTION_NUMBERS){
+                callback(questions);
+            }
         });
     }
 };
