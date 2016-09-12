@@ -125,6 +125,8 @@ altp.init = function (io) {
                     room = new Room('room#' + altp.rooms.length, [user], questions);
                     altp.rooms.push(room);
 
+                    console.log('create room: '+ JSON.stringify(room));
+
                     processRoom(room);
                 });
             });
