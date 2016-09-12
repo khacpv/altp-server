@@ -426,6 +426,8 @@ var getRandomQuestion = function (callback) {
             var question = new Question(item.question, item.answers, item.answerRight-1, i-1);
             questions.push(question);
 
+            console.log('from db: '+ JSON.stringify(question));
+
             if(questions.length == QUESTION_NUMBERS){
                 callback(questions);
             }
