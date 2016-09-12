@@ -417,7 +417,7 @@ var getRandomQuestion = function (callback) {
     // get one question for each level (1... 15)
     for (var i = 1; i <= QUESTION_NUMBERS; i++) {
         var query = {
-            level: i
+            level: i+''
         };
         mongoDb.questions.count(query, function(err, value){
             console.log('count: '+value+' questions');
