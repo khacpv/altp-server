@@ -92,13 +92,14 @@ altp.init = function (io) {
 
                 if (room == null) {
                     // create a new room
-                    var questions = [
-                        new Question('1+1=?', ['0', '1', '2', '3'], 2, 0),
-                        new Question('1+2=?', ['0', '1', '2', '3'], 3, 1),
-                        new Question('1+3=?', ['0', '4', '2', '3'], 1, 2),
-                        new Question('1+4=?', ['0', '1', '5', '3'], 2, 3),
-                        new Question('1+5=?', ['6', '1', '2', '3'], 0, 4)
-                    ];
+                    //var questions = [
+                    //    new Question('1+1=?', ['0', '1', '2', '3'], 2, 0),
+                    //    new Question('1+2=?', ['0', '1', '2', '3'], 3, 1),
+                    //    new Question('1+3=?', ['0', '4', '2', '3'], 1, 2),
+                    //    new Question('1+4=?', ['0', '1', '5', '3'], 2, 3),
+                    //    new Question('1+5=?', ['6', '1', '2', '3'], 0, 4)
+                    //];
+                    var questions = getRandomQuestion();
                     room = new Room('room#' + altp.rooms.length, [user], questions);
                     altp.rooms.push(room);
                 }
@@ -406,7 +407,22 @@ var getRoomById = function (roomId) {
  * get random 15 questions from database
  * */
 var getRandomQuestion = function () {
+    var questions = [];
+    // using: abc.find({ _id: ObjectId(req.params.id) }, function(...) { ... });
 
+    // get one question for each level (1... 15)
+    for (var i = 1; i <= 15; i++) {
+        var query = {
+            level: i
+        };
+        var n = mongoDb.questions.count(query);
+        var r = Math.floor(Math.random() * n);
+        var item = mongoDb.questions.find(query).limit(1).skip(r);
+        var question = new Question(item.question, item.answers, item.answerRight, i);
+        questions.push(question);
+    }
+
+    return questions;
 };
 
 module.exports = altp;
