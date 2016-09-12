@@ -275,7 +275,10 @@ altp.init = function (io) {
 
                 // game over
                 if (room.questionIndex == room.questions.length) {
-                    gameOver(data);
+                    setInterval(function(){
+                        data.lastQuestion = true;
+                        gameOver(data);
+                    }, 5000);
                 }
             });
         };
@@ -329,9 +332,10 @@ altp.init = function (io) {
 
                 console.log('gameOver: ' + user.name);
 
-                var dataResponse = {
-                    users: room.users
-                };
+                var dataResponse = data;
+                dataResponse.answerRight = room.questions[room.questionIndex].answerRight;
+                dataResponse.users = room.users;
+                dataResponse.room = room;
 
                 console.log('gameOverCallback: total users: ' + dataResponse.users.length);
 
@@ -342,6 +346,8 @@ altp.init = function (io) {
         var quit = function (data) {
             getUserById(data.user.id, function (err, user) {
                 var room = getRoomById(data.room.id);
+
+                // delete current room (one user quit)
 
                 var dataResponse = {
                     user: user,
