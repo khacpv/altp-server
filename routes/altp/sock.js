@@ -278,7 +278,7 @@ altp.init = function (io) {
 
                 // game over
                 if (room.questionIndex == room.questions.length) {
-                    setInterval(function(){
+                    setTimeout(function(){
                         data.lastQuestion = true;
                         gameOver(data);
                     }, 5000);
