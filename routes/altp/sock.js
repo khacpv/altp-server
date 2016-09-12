@@ -420,7 +420,7 @@ var getRandomQuestion = function (callback) {
             level: i
         };
         mongoDb.questions.count(query, function(err, value){
-            console.log('count: '+n+' questions');
+            console.log('count: '+value+' questions');
         });
 
         mongoDb.questions.findOne(query, function(err, item){
