@@ -421,9 +421,9 @@ var getRandomQuestion = function (callback) {
         };
         var n = mongoDb.questions.count(query);
         var r = Math.floor(Math.random() * n);
-        mongoDb.questions.find(query).limit(1).skip(r, function(err, item){
+        mongoDb.questions.findOne(query, function(err, item){
 
-            var question = new Question(item.question, item.answers, item.answerRight-1, i-1);
+            var question = new Question(item.question, item.answers, item.answerRight-1, item.level);
             questions.push(question);
 
             console.log('from db: '+ JSON.stringify(question));
