@@ -72,7 +72,7 @@ app.use(function (err, req, res, next) {
     }
 });
 
-var ip = process.env.OPENSHIFT_NODEJS_IP || '192.168.1.102';
+var ip = process.env.OPENSHIFT_NODEJS_IP || '192.168.1.103';
 var port = process.env.OPENSHIFT_NODEJS_PORT || 8081;
 
 server.listen(port, ip, function () {

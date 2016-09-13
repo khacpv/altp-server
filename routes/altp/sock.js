@@ -223,6 +223,9 @@ altp.init = function (io) {
                         addScore(winnerUser, 100);
                         addScore(room.users[0], 100);
 
+                        room.users[0].winner = true;
+                        room.users[1].winner = false;
+
                         dataResponse = {
                             answerRight: room.questions[room.questionIndex].answerRight,
                             user: user,
@@ -239,6 +242,10 @@ altp.init = function (io) {
                     getUserById(room.users[1].id, function (err, winnerUser) {
                         addScore(winnerUser, 100);
                         addScore(room.users[1], 100);
+
+                        room.users[0].winner = false;
+                        room.users[1].winner = true;
+
                         dataResponse = {
                             answerRight: room.questions[room.questionIndex].answerRight,
                             user: user,
@@ -252,6 +259,9 @@ altp.init = function (io) {
                 // draw: both wrong
                 else if (answerRightIndex != room.users[0].answerIndex
                     && answerRightIndex != room.users[1].answerIndex) {
+
+                    room.users[0].winner = false;
+                    room.users[1].winner = false;
 
                     dataResponse = {
                         answerRight: room.questions[room.questionIndex].answerRight,
@@ -282,8 +292,12 @@ altp.init = function (io) {
 
                 // game over
                 if (room.questionIndex == room.questions.length) {
+                    room.users[0].winner = true;
+                    room.users[1].winner = true;
+
                     setTimeout(function(){
                         data.lastQuestion = true;
+                        data.room = room;
                         gameOver(data);
                     }, 5000);
                 }
@@ -297,8 +311,6 @@ altp.init = function (io) {
         var answerNext = function (data) {
             getUserById(data.user.id, function (err, user) {
                 var room = getRoomById(data.room.id);
-
-                console.log('answerNext: ' + user.name + ' get nextQuestion');
 
                 var numUserAnswer = 0;
                 var i;
@@ -324,6 +336,8 @@ altp.init = function (io) {
                 var dataResponse = {
                     question: room.questions[room.questionIndex]
                 };
+
+                console.log('answerNext: ' + user.name + ' get nextQuestion:'+JSON.stringify(dataResponse.question));
 
                 __io.to(room.id).emit('answerNext', dataResponse);
             });
@@ -425,7 +439,7 @@ var getRandomQuestion = function (callback) {
 
         mongoDb.questions.findOne(query, function(err, item){
 
-            var question = new Question(item.question, item.answers, item.answerRight-1, Math.floor(item.level));
+            var question = new Question(item.question, item.answers, item.answerRight, Math.floor(item.level)-1);
             questions.push(question);
 
             console.log('from db: '+ JSON.stringify(question));
