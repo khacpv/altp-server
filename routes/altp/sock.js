@@ -223,8 +223,8 @@ altp.init = function (io) {
                 if (answerRightIndex == room.users[0].answerIndex
                     && answerRightIndex != room.users[1].answerIndex) {
                     getUserById(room.users[0].id, function (err, winnerUser) {
-                        addScore(winnerUser, 100);
-                        addScore(room.users[0], 100);
+                        addScore(winnerUser, room.questionIndex);
+                        addScore(room.users[0], room.questionIndex);
 
                         room.users[0].winner = true;
                         room.users[1].winner = false;
@@ -243,8 +243,8 @@ altp.init = function (io) {
                 else if (answerRightIndex != room.users[0].answerIndex
                     && answerRightIndex == room.users[1].answerIndex) {
                     getUserById(room.users[1].id, function (err, winnerUser) {
-                        addScore(winnerUser, 100);
-                        addScore(room.users[1], 100);
+                        addScore(winnerUser, room.questionIndex);
+                        addScore(room.users[1], room.questionIndex);
 
                         room.users[0].winner = false;
                         room.users[1].winner = true;
@@ -279,7 +279,7 @@ altp.init = function (io) {
                 // next question
                 for (i = 0; i < room.users.length; i++) {
                     if (room.questions[room.questionIndex].answerRight == room.users[i].answerIndex) {
-                        addScore(room.users[i], 100);
+                        addScore(room.users[i], room.questionIndex);
                     }
                 }
 
@@ -361,6 +361,17 @@ altp.init = function (io) {
                 dataResponse.users = room.users;
                 dataResponse.room = room;
 
+                for(var i=0;i<room.users.length;i++){
+                    if(room.users[i].winner){
+                        room.users[i].totalScore += room.users[i].score;
+                        room.users[i].score = 0;
+
+                        mongoDb.users.update({id: room.users[i].id},room.users[i],{ upsert: true }, function(err, data){
+                            console.log('update user: ERR='+err);
+                        });
+                    }
+                }
+
                 console.log('gameOverCallback: total users: ' + JSON.stringify(dataResponse));
 
                 __io.to(room.id).emit('gameOver', dataResponse);
@@ -398,8 +409,14 @@ altp.init = function (io) {
  * add score to user
  * @return user object
  * */
-var addScore = function (user, score) {
-    user.score += score;
+var addScore = function (user, questionIndex) {
+    var scoreTable = [
+        200, 400, 600, 1000, 2000, //
+        3000, 6000, 10000, 14000, 22000, //
+        30000, 40000, 60000, 85000, 150000
+    ];
+
+    user.score += scoreTable[questionIndex];
 };
 
 /**
