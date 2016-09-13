@@ -93,7 +93,7 @@ altp.init = function (io) {
                     }
                 }
 
-                var processRoom = function(room){
+                var processRoom = function (room) {
                     // refresh state users
                     for (i = 0; i < room.users.length; i++) {
                         room.users[i].ready = false;
@@ -124,11 +124,11 @@ altp.init = function (io) {
                 }
 
                 // create a new room
-                getRandomQuestion(function(questions){
+                getRandomQuestion(function (questions) {
                     room = new Room('room#' + altp.rooms.length, [user], questions);
                     altp.rooms.push(room);
 
-                    console.log('create room: '+ JSON.stringify(room));
+                    console.log('create room: ' + JSON.stringify(room));
 
                     processRoom(room);
                 });
@@ -226,8 +226,7 @@ altp.init = function (io) {
                         addScore(winnerUser, room.questionIndex);
                         addScore(room.users[0], room.questionIndex);
 
-                        room.users[0].winner = true;
-                        room.users[1].winner = false;
+                        subScore(room.users[1], room.questionIndex);
 
                         dataResponse = {
                             answerRight: room.questions[room.questionIndex].answerRight,
@@ -246,8 +245,7 @@ altp.init = function (io) {
                         addScore(winnerUser, room.questionIndex);
                         addScore(room.users[1], room.questionIndex);
 
-                        room.users[0].winner = false;
-                        room.users[1].winner = true;
+                        subScore(room.users[0], room.questionIndex);
 
                         dataResponse = {
                             answerRight: room.questions[room.questionIndex].answerRight,
@@ -263,8 +261,8 @@ altp.init = function (io) {
                 else if (answerRightIndex != room.users[0].answerIndex
                     && answerRightIndex != room.users[1].answerIndex) {
 
-                    room.users[0].winner = false;
-                    room.users[1].winner = false;
+                    subScore(room.users[0], room.questionIndex);
+                    subScore(room.users[1], room.questionIndex);
 
                     dataResponse = {
                         answerRight: room.questions[room.questionIndex].answerRight,
@@ -295,10 +293,8 @@ altp.init = function (io) {
 
                 // game over
                 if (room.questionIndex == room.questions.length) {
-                    room.users[0].winner = true;
-                    room.users[1].winner = true;
 
-                    setTimeout(function(){
+                    setTimeout(function () {
                         data.lastQuestion = true;
                         data.room = room;
                         gameOver(data);
@@ -340,7 +336,7 @@ altp.init = function (io) {
                     question: room.questions[room.questionIndex]
                 };
 
-                console.log('answerNext: ' + user.name + ' get nextQuestion:'+JSON.stringify(dataResponse.question));
+                console.log('answerNext: ' + user.name + ' get nextQuestion:' + JSON.stringify(dataResponse.question));
 
                 __io.to(room.id).emit('answerNext', dataResponse);
             });
@@ -361,13 +357,13 @@ altp.init = function (io) {
                 dataResponse.users = room.users;
                 dataResponse.room = room;
 
-                for(var i=0;i<room.users.length;i++){
-                    if(room.users[i].winner){
+                for (var i = 0; i < room.users.length; i++) {
+                    if (room.users[i].winner) {
                         room.users[i].totalScore += room.users[i].score;
                         room.users[i].score = 0;
 
-                        mongoDb.users.update({id: room.users[i].id},room.users[i],{ upsert: true }, function(err, data){
-                            console.log('update user: ERR='+err);
+                        mongoDb.users.update({id: room.users[i].id}, room.users[i], {upsert: true}, function (err, data) {
+                            console.log('update user: ERR=' + err);
                         });
                     }
                 }
@@ -406,10 +402,12 @@ altp.init = function (io) {
 /************** UTILITIES **************/
 
 /**
- * add score to user
+ * add score to user. and set winner = true
  * @return user object
  * */
 var addScore = function (user, questionIndex) {
+    user.winner = true;
+
     var scoreTable = [
         200, 400, 600, 1000, 2000, //
         3000, 6000, 10000, 14000, 22000, //
@@ -417,6 +415,21 @@ var addScore = function (user, questionIndex) {
     ];
 
     user.score += scoreTable[questionIndex];
+};
+
+/**
+ * subtract score to anchor. and set winner = false
+ * */
+var subScore = function (user, questionIndex) {
+    user.winner = false;
+
+    if (questionIndex <= 5) {
+        user.score = 200;
+    } else if (questionIndex <= 10) {
+        user.score = 2000;
+    } else {
+        user.score = 22000;
+    }
 };
 
 /**
@@ -448,7 +461,7 @@ var getRandomQuestion = function (callback) {
     var questions = [];
     var random = Math.random();
 
-    console.log('------ random: '+ random);
+    console.log('------ random: ' + random);
 
     // get one question for each level (1... 15)
     for (var i = 1; i <= QUESTION_NUMBERS; i++) {
@@ -459,18 +472,18 @@ var getRandomQuestion = function (callback) {
             }
         };
 
-        mongoDb.questions.findOne({$query: query, $orderby: {rnd: 1}}, function(err, item){
-            var question = new Question('1+1=?',['1','2','3','4'],1,i);
+        mongoDb.questions.findOne({$query: query, $orderby: {rnd: 1}}, function (err, item) {
+            var question = new Question('1+1=?', ['1', '2', '3', '4'], 1, i);
 
-            if(item){
-                question = new Question(item.question, item.answers, item.answerRight, Math.floor(item.level)-1);
+            if (item) {
+                question = new Question(item.question, item.answers, item.answerRight, Math.floor(item.level) - 1);
             }
 
             questions.push(question);
 
-            console.log('from db: '+ JSON.stringify(item));
+            console.log('from db: ' + JSON.stringify(item));
 
-            if(questions.length == QUESTION_NUMBERS){
+            if (questions.length == QUESTION_NUMBERS) {
                 callback(questions);
             }
         });
