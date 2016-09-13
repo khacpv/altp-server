@@ -426,23 +426,29 @@ var getRoomById = function (roomId) {
 var getRandomQuestion = function (callback) {
     var QUESTION_NUMBERS = 15;
     var questions = [];
-    // using: abc.find({ _id: ObjectId(req.params.id) }, function(...) { ... });
+    var random = Math.random();
+
+    console.log('------ random: '+ random);
 
     // get one question for each level (1... 15)
     for (var i = 1; i <= QUESTION_NUMBERS; i++) {
         var query = {
-            level: i+''
+            "level": i,
+            "rnd": {
+                $gte: random
+            }
         };
-        mongoDb.questions.count(query, function(err, value){
-            console.log('count: '+value+' questions');
-        });
 
-        mongoDb.questions.findOne(query, function(err, item){
+        mongoDb.questions.findOne({$query: query, $orderby: {rnd: 1}}, function(err, item){
+            var question = new Question('1+1=?',['1','2','3','4'],1,i);
 
-            var question = new Question(item.question, item.answers, item.answerRight, Math.floor(item.level)-1);
+            if(item){
+                question = new Question(item.question, item.answers, item.answerRight, Math.floor(item.level)-1);
+            }
+
             questions.push(question);
 
-            console.log('from db: '+ JSON.stringify(question));
+            console.log('from db: '+ JSON.stringify(item));
 
             if(questions.length == QUESTION_NUMBERS){
                 callback(questions);
