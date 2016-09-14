@@ -60,6 +60,7 @@ altp.init = function (io) {
 
                     });
                 }
+                console.log('login: '+JSON.stringify(user));
                 sock.emit('login', {success: true, user: user});
             });
         };
@@ -69,7 +70,6 @@ altp.init = function (io) {
          * @param data = {user.id}
          * */
         var search = function (data) {
-            console.log(JSON.stringify(data));
             getUserById(data.user.id, function (err, user) {
 
                 if (user == null) {
@@ -80,12 +80,13 @@ altp.init = function (io) {
                 var room = null;
                 var i;
 
-                console.log('search: ' + JSON.stringify(user) + ' searching');
+                console.log('search: ' + JSON.stringify(user) + ' searching...');
 
                 for (i = 0; i < altp.rooms.length; i++) {
                     if (altp.rooms[i].users.length == 1) {
                         if (altp.rooms[i].users[0].id != user.id) {
-                            console.log('user id: ' + altp.rooms[i].users[0].id + ' name:' + altp.rooms[i].users[0].name);
+                            console.log('search room: 0:' + ' name:' + altp.rooms[i].users[0].name+ ' totalScore:'+altp.rooms[i].users[0].totalScore);
+                            console.log('search room: user: ' + ' name:' + user.name+ ' totalScore:'+user.totalScore);
                             room = altp.rooms[i];
                             room.users.push(user);
                             break;
@@ -128,7 +129,7 @@ altp.init = function (io) {
                     room = new Room('room#' + altp.rooms.length, [user], questions);
                     altp.rooms.push(room);
 
-                    console.log('create room: ' + JSON.stringify(room));
+                    //console.log('create room: ' + JSON.stringify(room));
 
                     processRoom(room);
                 });
@@ -360,7 +361,6 @@ altp.init = function (io) {
                 for (var i = 0; i < room.users.length; i++) {
                     if (room.users[i].winner) {
                         room.users[i].totalScore += room.users[i].score;
-                        room.users[i].score = 0;
 
                         mongoDb.users.update({id: room.users[i].id}, room.users[i], {upsert: true}, function (err, data) {
                             console.log('update user: ERR=' + err);
@@ -380,12 +380,11 @@ altp.init = function (io) {
 
                 // delete current room (one user quit)
 
-                var dataResponse = {
-                    user: user,
-                    room: room
-                };
+                var dataResponse = data;
+                dataResponse.answerRight = room.answerRight;
 
-                __io.to(room.id).emit('quit', dataResponse);
+                gameOver(dataResponse);
+                //__io.to(room.id).emit('quit', dataResponse);
             });
         };
 
@@ -414,7 +413,7 @@ var addScore = function (user, questionIndex) {
         30000, 40000, 60000, 85000, 150000
     ];
 
-    user.score += scoreTable[questionIndex];
+    user.score = scoreTable[questionIndex];
 };
 
 /**
@@ -422,10 +421,11 @@ var addScore = function (user, questionIndex) {
  * */
 var subScore = function (user, questionIndex) {
     user.winner = false;
-
-    if (questionIndex <= 5) {
+    if(questionIndex <= 1){
+        user.score = 0;
+    } else if (questionIndex < 5) {
         user.score = 200;
-    } else if (questionIndex <= 10) {
+    } else if (questionIndex < 10) {
         user.score = 2000;
     } else {
         user.score = 22000;
@@ -476,7 +476,7 @@ var getRandomQuestion = function (callback) {
             var question = new Question('1+1=?', ['1', '2', '3', '4'], 1, i);
 
             if (item) {
-                question = new Question(item.question, item.answers, item.answerRight, Math.floor(item.level) - 1);
+                question = new Question(item.question, item.answers, item.answerRight, Math.floor(item.level));
             }
 
             questions.push(question);
@@ -484,6 +484,11 @@ var getRandomQuestion = function (callback) {
             console.log('from db: ' + JSON.stringify(item));
 
             if (questions.length == QUESTION_NUMBERS) {
+
+                questions.sort(function(q1, q2){
+                    return q1.questionIndex - q2.questionIndex;
+                });
+
                 callback(questions);
             }
         });
