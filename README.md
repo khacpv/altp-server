@@ -59,6 +59,7 @@ $git remote add openshift ssh://57a368ed2d52710de4000033@altp-oic.rhcloud.com/~/
  
 #### see console.log
  $rhc tail -a altp
+ ssh -t 57a368ed2d52710de4000033@altp-oic.rhcloud.com 'tail */log*/*'
 
 #### restart application
  $rhc restart-app --app altp
