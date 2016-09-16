@@ -59,9 +59,21 @@ altp.init = function (io) {
                         console.log('login:insert:err:' + JSON.stringify(err));
 
                     });
+
+                    console.log('login: ' + JSON.stringify(user));
+                    sock.emit('login', {success: true, user: user});
                 }
-                console.log('login: '+JSON.stringify(user));
-                sock.emit('login', {success: true, user: user});
+                else {
+                    mongoDb.users.update({id: reqUser.id}, reqUser, function (err, result) {
+                        if (err) {
+                            console.log('update user error:' + err);
+                            return;
+                        }
+                        console.log('update user: ' + JSON.stringify(result));
+                        console.log('update user reqUser: ' + JSON.stringify(reqUser));
+                        sock.emit('login', {success: true, user: reqUser});
+                    });
+                }
             });
         };
 
@@ -85,8 +97,8 @@ altp.init = function (io) {
                 for (i = 0; i < altp.rooms.length; i++) {
                     if (altp.rooms[i].users.length == 1) {
                         if (altp.rooms[i].users[0].id != user.id) {
-                            console.log('search room: 0:' + ' name:' + altp.rooms[i].users[0].name+ ' totalScore:'+altp.rooms[i].users[0].totalScore);
-                            console.log('search room: user: ' + ' name:' + user.name+ ' totalScore:'+user.totalScore);
+                            console.log('search room: 0:' + ' name:' + altp.rooms[i].users[0].name + ' totalScore:' + altp.rooms[i].users[0].totalScore);
+                            console.log('search room: user: ' + ' name:' + user.name + ' totalScore:' + user.totalScore);
                             room = altp.rooms[i];
                             room.users.push(user);
                             break;
@@ -325,6 +337,8 @@ altp.init = function (io) {
                     return;
                 }
 
+
+                console.log('set answer index to -1');
                 for (i = 0; i < room.users.length; i++) {
                     room.users[i].answerIndex = -1;
                 }
@@ -368,7 +382,7 @@ altp.init = function (io) {
                     }
                 }
 
-                console.log('gameOverCallback: total users: ' + JSON.stringify(dataResponse));
+                console.log('gameOverCallback: room: ' + JSON.stringify(room));
 
                 __io.to(room.id).emit('gameOver', dataResponse);
             });
@@ -382,9 +396,10 @@ altp.init = function (io) {
 
                 var dataResponse = data;
                 dataResponse.answerRight = room.answerRight;
+                dataResponse.room = room;
+                dataResponse.users = room.users;
 
-                gameOver(dataResponse);
-                //__io.to(room.id).emit('quit', dataResponse);
+                __io.to(room.id).emit('quit', dataResponse);
             });
         };
 
@@ -421,7 +436,7 @@ var addScore = function (user, questionIndex) {
  * */
 var subScore = function (user, questionIndex) {
     user.winner = false;
-    if(questionIndex <= 1){
+    if (questionIndex <= 1) {
         user.score = 0;
     } else if (questionIndex < 5) {
         user.score = 200;
@@ -485,7 +500,7 @@ var getRandomQuestion = function (callback) {
 
             if (questions.length == QUESTION_NUMBERS) {
 
-                questions.sort(function(q1, q2){
+                questions.sort(function (q1, q2) {
                     return q1.questionIndex - q2.questionIndex;
                 });
 
