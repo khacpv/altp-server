@@ -4,7 +4,8 @@
   "description": "ALTP server",
   "main": "./app.js",
   "scripts": {
-    "install": ""
+    "install": "",
+    "start": "node app.js"
   },
   "author": {
     "name": "khacpv",
