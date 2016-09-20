@@ -472,7 +472,7 @@ var getRoomById = function (roomId) {
  * get random 15 questions from database
  * */
 var getRandomQuestion = function (callback) {
-    var QUESTION_NUMBERS = 2;
+    var QUESTION_NUMBERS = 15;
     var questions = [];
     var random = Math.random();
 
