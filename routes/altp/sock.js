@@ -64,6 +64,7 @@ altp.init = function (io) {
                     sock.emit('login', {success: true, user: user});
                 }
                 else {
+                    reqUser.totalScore = user.totalScore;
                     mongoDb.users.update({id: reqUser.id}, reqUser, function (err, result) {
                         if (err) {
                             console.log('update user error:' + err);
@@ -299,19 +300,20 @@ altp.init = function (io) {
                     answerUsers: room.users
                 };
 
-                console.log('answerCallback: answerRight:' + dataResponse.answerRight);
-
-                room.questionIndex++;
-                __io.to(room.id).emit('answer', dataResponse);
-
                 // game over
                 if (room.questionIndex == room.questions.length) {
+                    console.log('answerCallback: lastQuestion: '+room.questionIndex);
 
                     setTimeout(function () {
                         data.lastQuestion = true;
                         data.room = room;
                         gameOver(data);
                     }, 5000);
+                }else{
+                    console.log('answerCallback: answerRight:' + dataResponse.answerRight);
+
+                    room.questionIndex++;
+                    __io.to(room.id).emit('answer', dataResponse);
                 }
             });
         };
