@@ -46,7 +46,8 @@ $git remote add openshift ssh://57a368ed2d52710de4000033@altp-oic.rhcloud.com/~/
  ssh://5766b0f50c1e6601a800014e@image-oic.rhcloud.com/~/git/image.git/
 
 #### watch using space memory
- $rhc show-app image --gears quota
+ $rhc show-app altp --gears quota
+ $rhc app-tidy
 
 #### port forwarding (use remote database on local computer)
  $rhc port-forward altp
@@ -62,4 +63,10 @@ $git remote add openshift ssh://57a368ed2d52710de4000033@altp-oic.rhcloud.com/~/
  ssh -t 57a368ed2d52710de4000033@altp-oic.rhcloud.com 'tail */log*/*'
 
 #### restart application
- $rhc restart-app --app altp
+ $rhc restart-app -a altp
+
+#### stop application
+ $rhc app-stop -a altp
+ 
+#### start application
+ $rhc app-start -a altp
