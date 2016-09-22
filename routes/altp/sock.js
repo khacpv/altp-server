@@ -295,13 +295,8 @@ altp.init = function (io) {
                     }
                 }
 
-                dataResponse = {
-                    answerRight: room.questions[room.questionIndex].answerRight,
-                    answerUsers: room.users
-                };
-
                 // game over
-                if (room.questionIndex == room.questions.length) {
+                if (room.questionIndex == room.questions.length-1) {
                     console.log('answerCallback: lastQuestion: '+room.questionIndex);
 
                     setTimeout(function () {
@@ -310,6 +305,11 @@ altp.init = function (io) {
                         gameOver(data);
                     }, 5000);
                 }else{
+                    dataResponse = {
+                        answerRight: room.questions[room.questionIndex].answerRight,
+                        answerUsers: room.users
+                    };
+
                     console.log('answerCallback: answerRight:' + dataResponse.answerRight);
 
                     room.questionIndex++;
