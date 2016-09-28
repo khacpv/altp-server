@@ -217,6 +217,9 @@ altp.init = function (io) {
                 var room = getRoomById(data.room.id);
                 var answerIndex = data.answerIndex;
 
+                // for reconnect
+                sock.join(room.id);
+
                 var i;
                 var dataResponse;
 
