@@ -107,6 +107,23 @@ altp.init = function (io) {
                     }
                 }
 
+                // remove old room
+                if (room == null) {
+                    var existRoomId = [];
+                    for (i = 0; i < altp.rooms.length; i++) {
+                        if(altp.rooms[i].users[0] && altp.rooms[i].users[0].id == user.id){
+                            existRoomId.push(i);
+                        }
+                        else if(altp.rooms[i].users[1] && altp.rooms[i].users[1].id == user.id){
+                            existRoomId.push(i);
+                        }
+                    }
+                    for(i=existRoomId.length-1;i>=0;i--){
+                        console.log('remove room: '+altp.rooms[existRoomId[i]].id);
+                        altp.rooms.slice(existRoomId[i]);
+                    }
+                }
+
                 var processRoom = function (room) {
                     // refresh state users
                     for (i = 0; i < room.users.length; i++) {
