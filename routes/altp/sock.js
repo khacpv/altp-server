@@ -240,6 +240,7 @@ altp.init = function (io) {
                 }
 
                 if (!isAllAnswered) {
+                    console.log('waiting for other answer...');
                     __io.to(room.id).emit('answer', {notAllAnswered: true});
                     return;
                 }
