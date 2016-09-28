@@ -111,15 +111,15 @@ altp.init = function (io) {
                 if (room == null) {
                     var existRoomId = [];
                     for (i = 0; i < altp.rooms.length; i++) {
-                        if(altp.rooms[i].users[0] && altp.rooms[i].users[0].id == user.id){
+                        if (altp.rooms[i].users[0] && altp.rooms[i].users[0].id == user.id) {
                             existRoomId.push(i);
                         }
-                        else if(altp.rooms[i].users[1] && altp.rooms[i].users[1].id == user.id){
+                        else if (altp.rooms[i].users[1] && altp.rooms[i].users[1].id == user.id) {
                             existRoomId.push(i);
                         }
                     }
-                    for(i=existRoomId.length-1;i>=0;i--){
-                        console.log('remove room: '+altp.rooms[existRoomId[i]].id);
+                    for (i = existRoomId.length - 1; i >= 0; i--) {
+                        console.log('remove room: ' + altp.rooms[existRoomId[i]].id);
                         altp.rooms.slice(existRoomId[i]);
                     }
                 }
@@ -175,6 +175,9 @@ altp.init = function (io) {
                 var room = getRoomById(data.room.id);
                 var i;
                 var isAllReady = true;
+
+                // for reconnect
+                sock.join(room.id);
 
                 console.log('play: ' + user.name + ' ready!');
 
@@ -347,6 +350,9 @@ altp.init = function (io) {
             getUserById(data.user.id, function (err, user) {
                 var room = getRoomById(data.room.id);
 
+                // for reconnect
+                sock.join(room.id);
+
                 var numUserAnswer = 0;
                 var i;
                 for (i = 0; i < room.users.length; i++) {
@@ -388,6 +394,9 @@ altp.init = function (io) {
             getUserById(data.user.id, function (err, user) {
                 var room = getRoomById(data.room.id);
 
+                // for reconnect
+                sock.join(room.id);
+
                 console.log('gameOver: ' + user.name);
 
                 var dataResponse = data;
@@ -412,10 +421,10 @@ altp.init = function (io) {
         };
 
         var quit = function (data) {
+            var isPlay = data.isPlay;
+
             getUserById(data.user.id, function (err, user) {
                 var room = getRoomById(data.room.id);
-
-                // delete current room (one user quit)
 
                 var dataResponse = data;
                 dataResponse.answerRight = room.answerRight;
@@ -423,6 +432,16 @@ altp.init = function (io) {
                 dataResponse.users = room.users;
 
                 __io.to(room.id).emit('quit', dataResponse);
+
+                // delete current room (one user quit)
+                if (!isPlay) {
+                    for (var i = altp.rooms.length - 1; i >= 0; i--) {
+                        if (room.id == altp.rooms[i].id) {
+                            altp.rooms.splice(i);
+                            break;
+                        }
+                    }
+                }
             });
         };
 
