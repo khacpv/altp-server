@@ -21,10 +21,10 @@ var altp = {
         new User(0, 'Bằng Kiều', 'china', 'fb_id_0', 'http://www.nhipsongphunu.com/public/default/content/Images/Lam%20dep/avatar%20-20150311-14030457.jpg'),
         new User(1, 'Hoài Linh', 'hongkong', 'fb_id_1', 'http://avatar.nct.nixcdn.com/playlist/2013/11/07/2/e/6/4/1383813832087_500.jpg'),
         new User(2, 'Obama', 'america', 'fb_id_2', 'http://media.todaybirthdays.com/thumb_x256x256/upload/2015/11/30/michelle-rodriguez.jpg'),
-        new User(2, 'Lý Hùng', 'camarun', 'fb_id_2', 'http://media.todaybirthdays.com/thumb_x256x256/upload/2015/11/30/michelle-rodriguez.jpg'),
-        new User(2, 'Cẩm Ly', 'america', 'fb_id_2', 'http://media.todaybirthdays.com/thumb_x256x256/upload/2015/11/30/michelle-rodriguez.jpg'),
-        new User(2, 'son tùng MTP', 'america', 'fb_id_2', 'http://media.todaybirthdays.com/thumb_x256x256/upload/2015/11/30/michelle-rodriguez.jpg'),
-        new User(3, 'Issac', 'brazin', 'fb_id_3', 'http://images2.fanpop.com/image/photos/9800000/beautiful-face-avril-lavigne-9812919-453-500.jpg')
+        new User(3, 'Lý Hùng', 'camarun', 'fb_id_2', 'http://media.todaybirthdays.com/thumb_x256x256/upload/2015/11/30/michelle-rodriguez.jpg'),
+        new User(4, 'Cẩm Ly', 'america', 'fb_id_2', 'http://media.todaybirthdays.com/thumb_x256x256/upload/2015/11/30/michelle-rodriguez.jpg'),
+        new User(5, 'son tùng MTP', 'america', 'fb_id_2', 'http://media.todaybirthdays.com/thumb_x256x256/upload/2015/11/30/michelle-rodriguez.jpg'),
+        //new User(6, 'Issac', 'brazin', 'fb_id_3', 'http://images2.fanpop.com/image/photos/9800000/beautiful-face-avril-lavigne-9812919-453-500.jpg')
     ]
 };
 
@@ -296,15 +296,15 @@ altp.init = function (io) {
                 }
 
                 // game over
-                if (room.questionIndex == room.questions.length-1) {
-                    console.log('answerCallback: lastQuestion: '+room.questionIndex);
+                if (room.questionIndex == room.questions.length - 1) {
+                    console.log('answerCallback: lastQuestion: ' + room.questionIndex);
 
                     setTimeout(function () {
                         data.lastQuestion = true;
                         data.room = room;
                         gameOver(data);
                     }, 5000);
-                }else{
+                } else {
                     dataResponse = {
                         answerRight: room.questions[room.questionIndex].answerRight,
                         answerUsers: room.users
@@ -490,7 +490,7 @@ var getRandomQuestion = function (callback) {
         };
 
         mongoDb.questions.findOne({$query: query, $orderby: {rnd: 1}}, function (err, item) {
-            var question = new Question('1+1=?', ['1', '2', '3', '4'], 1, i);
+            var question = new Question('Ngày 22/05/1960, một trận động đất mạnh 9.5 độ richter xảy ra tại quốc gia nào?', ['Chile', 'Nga', 'Hoa Kỳ', 'Indonesia'], 0, i);
 
             if (item) {
                 question = new Question(item.question, item.answers, item.answerRight, Math.floor(item.level));
