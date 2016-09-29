@@ -15,17 +15,15 @@ var Room = require(__appname + '/model/room');
 
 var mongoDb = require(__appname + '/mongodb/mongodb');
 
+var dummyUsers = require(__appname + '/data/dummy_user');
+var gameOverMessages = require(__appname + '/data/gameover_message');
+
+const NUM_DUMMY_USERS = 6;  // 6 search players
+
 var altp = {
     rooms: [],
-    dummyUsers: [
-        new User(0, 'Bằng Kiều', 'china', 'fb_id_0', 'http://www.nhipsongphunu.com/public/default/content/Images/Lam%20dep/avatar%20-20150311-14030457.jpg'),
-        new User(1, 'Hoài Linh', 'hongkong', 'fb_id_1', 'http://avatar.nct.nixcdn.com/playlist/2013/11/07/2/e/6/4/1383813832087_500.jpg'),
-        new User(2, 'Obama', 'america', 'fb_id_2', 'http://media.todaybirthdays.com/thumb_x256x256/upload/2015/11/30/michelle-rodriguez.jpg'),
-        new User(3, 'Lý Hùng', 'camarun', 'fb_id_2', 'http://media.todaybirthdays.com/thumb_x256x256/upload/2015/11/30/michelle-rodriguez.jpg'),
-        new User(4, 'Cẩm Ly', 'america', 'fb_id_2', 'http://media.todaybirthdays.com/thumb_x256x256/upload/2015/11/30/michelle-rodriguez.jpg'),
-        new User(5, 'son tùng MTP', 'america', 'fb_id_2', 'http://media.todaybirthdays.com/thumb_x256x256/upload/2015/11/30/michelle-rodriguez.jpg'),
-        //new User(6, 'Issac', 'brazin', 'fb_id_3', 'http://images2.fanpop.com/image/photos/9800000/beautiful-face-avril-lavigne-9812919-453-500.jpg')
-    ]
+    dummyUsers: dummyUsers,
+    messages: gameOverMessages
 };
 
 altp.init = function (io) {
@@ -52,7 +50,8 @@ altp.init = function (io) {
                         reqUser.name || '',
                         reqUser.address || '',
                         reqUser.fbId || -1,
-                        reqUser.avatar || '');
+                        reqUser.avatar || '',
+                        reqUser.lang || 'vi');
 
                     mongoDb.users.insert(user, function (err, user) {
                         console.log('login:insert:user:' + JSON.stringify(user));
@@ -120,7 +119,7 @@ altp.init = function (io) {
                     }
                     for (i = existRoomId.length - 1; i >= 0; i--) {
                         console.log('remove room: ' + altp.rooms[existRoomId[i]].id);
-                        altp.rooms.slice(existRoomId[i]);
+                        altp.rooms.splice(existRoomId[i]);
                     }
                 }
 
@@ -141,7 +140,7 @@ altp.init = function (io) {
 
                     var dataSearch = {
                         room: room,
-                        dummyUsers: altp.dummyUsers
+                        dummyUsers: getDummyUsers(NUM_DUMMY_USERS)
                     };
 
                     console.log('searchCallback: room:' + dataSearch.room.id + ' with user:' + room.users.length);
@@ -159,7 +158,7 @@ altp.init = function (io) {
                     room = new Room('room#' + altp.rooms.length, [user], questions);
                     altp.rooms.push(room);
 
-                    //console.log('create room: ' + JSON.stringify(room));
+                    console.log('searchCallback: create room: ' + JSON.stringify(room));
 
                     processRoom(room);
                 });
@@ -377,6 +376,7 @@ altp.init = function (io) {
                 }
 
                 var dataResponse = {
+                    room: room,
                     question: room.questions[room.questionIndex]
                 };
 
@@ -403,6 +403,7 @@ altp.init = function (io) {
                 dataResponse.answerRight = data.answerRight;
                 dataResponse.users = room.users;
                 dataResponse.room = room;
+                dataResponse.messages = getGameOverMessages('vi');
 
                 for (var i = 0; i < room.users.length; i++) {
                     if (room.users[i].winner) {
@@ -426,10 +427,19 @@ altp.init = function (io) {
             getUserById(data.user.id, function (err, user) {
                 var room = getRoomById(data.room.id);
 
+                // sub score if a use quit
+                if (room.users[0].id == user.id) {
+                    subScore(room.users[0], room.questionIndex);
+                } else {
+                    subScore(room.users[1], room.questionIndex);
+                }
+
                 var dataResponse = data;
                 dataResponse.answerRight = room.answerRight;
                 dataResponse.room = room;
                 dataResponse.users = room.users;
+                dataResponse.quitUserId = user.id;
+                dataResponse.messages = getGameOverMessages('vi');
 
                 __io.to(room.id).emit('quit', dataResponse);
 
@@ -437,6 +447,7 @@ altp.init = function (io) {
                 if (!isPlay) {
                     for (var i = altp.rooms.length - 1; i >= 0; i--) {
                         if (room.id == altp.rooms[i].id) {
+                            console.log('quit: delete room ' + room.id);
                             altp.rooms.splice(i);
                             break;
                         }
@@ -456,6 +467,32 @@ altp.init = function (io) {
 };
 
 /************** UTILITIES **************/
+
+/**
+ * get dummy user
+ * @param numUsers number user want to get
+ */
+var getDummyUsers = function (numUsers) {
+    var random = Math.floor(Math.random() * (altp.dummyUsers.length - numUsers));
+    var dummyUsers = altp.dummyUsers.slice(random, random + numUsers);
+    return dummyUsers;
+};
+
+/**
+ * get game over message to display.
+ *
+ * @param lang language
+ * @returns object message
+ */
+var getGameOverMessages = function (lang) {
+    var random = Math.floor(Math.random() * 10) + 1;
+    var result = {
+        win: altp.messages.win[random % altp.messages.win.length],
+        lose: altp.messages.lose[random % altp.messages.lose.length],
+        draw: altp.messages.draw[random % altp.messages.draw.length]
+    };
+    return result;
+};
 
 /**
  * add score to user. and set winner = true
@@ -491,7 +528,7 @@ var subScore = function (user, questionIndex) {
 
 /**
  * @param userId id of user
- * @return user object
+ * @param callback callback
  * */
 var getUserById = function (userId, callback) {
     mongoDb.users.findOne({id: userId}, callback);
