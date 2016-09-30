@@ -23,7 +23,8 @@ const NUM_DUMMY_USERS = 6;  // 6 search players
 var altp = {
     rooms: [],
     dummyUsers: dummyUsers,
-    messages: gameOverMessages
+    messages: gameOverMessages,
+    socks: {}
 };
 
 altp.init = function (io) {
@@ -134,9 +135,9 @@ altp.init = function (io) {
                     room.answerRight = 0;
                     room.questionIndex = 0;
 
-                    sock.leave(user.room);
+                    clearRoom(room);
                     user.room = room.id;
-                    sock.join(room.id);
+                    joinRoom(sock, room);
 
                     var dataSearch = {
                         room: room,
@@ -176,7 +177,7 @@ altp.init = function (io) {
                 var isAllReady = true;
 
                 // for reconnect
-                sock.join(room.id);
+                joinRoom(sock,room);
 
                 console.log('play: ' + user.name + ' ready!');
 
@@ -220,7 +221,7 @@ altp.init = function (io) {
                 var answerIndex = data.answerIndex;
 
                 // for reconnect
-                sock.join(room.id);
+                joinRoom(sock,room);
 
                 var i;
                 var dataResponse;
@@ -350,7 +351,7 @@ altp.init = function (io) {
                 var room = getRoomById(data.room.id);
 
                 // for reconnect
-                sock.join(room.id);
+                joinRoom(sock,room);
 
                 var numUserAnswer = 0;
                 var i;
@@ -395,7 +396,7 @@ altp.init = function (io) {
                 var room = getRoomById(data.room.id);
 
                 // for reconnect
-                sock.join(room.id);
+                joinRoom(sock,room);
 
                 console.log('gameOver: ' + user.name);
 
@@ -453,7 +454,13 @@ altp.init = function (io) {
                         }
                     }
                 }
+
+                clearRoom(room);
             });
+        };
+
+        var disconnect = function (data) {
+            console.log('socket disconnect');
         };
 
         socket.on('login', login);
@@ -463,10 +470,36 @@ altp.init = function (io) {
         socket.on('answerNext', answerNext);
         socket.on('gameOver', gameOver);
         socket.on('quit', quit);
+        socket.on('disconnect', disconnect);
     });
 };
 
 /************** UTILITIES **************/
+
+/**
+ * join socket into room
+ * @param sock
+ * @param room
+ */
+var joinRoom = function (sock, room) {
+    sock.join(room.id);
+    if (!altp.socks[room.id]) {
+        altp.socks[room.id] = [];
+    }
+    altp.socks[room.id].push(sock);
+};
+
+/**
+ * clear socket in room
+ * @param room
+ */
+var clearRoom = function (room) {
+    var roomSocket = altp.socks[room.id];
+    for (var i = 0; i < roomSocket.length; i++) {
+        roomSocket[i].leave(room.id);
+    }
+    delete altp.socks[room.id];
+};
 
 /**
  * get dummy user
