@@ -38,6 +38,8 @@ var altp = {
 };
 
 altp.init = function (io) {
+
+    // fetch all questions from database into memory
     getAllQuestionFromDb();
 
     io.on('connection', function (socket) {
@@ -146,6 +148,7 @@ altp.init = function (io) {
                     room.answerRight = 0;
                     room.questionIndex = 0;
 
+                    // TODO remove old room
                     user.room = room.id;
                     joinRoom(sock, room);
 
@@ -439,20 +442,26 @@ altp.init = function (io) {
             });
         };
 
+        /**
+         * search Opponent or out of time when playing
+         * @param data.isPlay true: play screen, false: otherwise
+         */
         var quit = function (data) {
             var isPlay = data.isPlay;
 
             getUserById(data.user.id, function (err, user) {
                 var room = getRoomById(data.room.id);
 
+                console.log('quit: user ' + user.name);
+
                 if (!room) {
                     console.log('quit: room removed');
                     return;
                 }
                 // sub score if a use quit
-                if (room.users[0].id == user.id) {
+                if (room.users[0] && room.users[0].id == user.id) {
                     subScore(room.users[0], room.questionIndex);
-                } else {
+                } else if (room.users[1]) {
                     subScore(room.users[1], room.questionIndex);
                 }
 
@@ -481,7 +490,7 @@ altp.init = function (io) {
         };
 
         var disconnect = function (data) {
-            console.log('socket disconnect');
+            console.log('socket disconnect: ' + JSON.stringify(data));
         };
 
         socket.on('login', login);
