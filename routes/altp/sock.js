@@ -19,15 +19,27 @@ var dummyUsers = require(__appname + '/data/dummy_user');
 var gameOverMessages = require(__appname + '/data/gameover_message');
 
 const NUM_DUMMY_USERS = 6;  // 6 search players
+const QUESTION_NUMBERS = 15;
+
+const SCORE_TABLE = [
+    200, 400, 600, 1000, 2000, //
+    3000, 6000, 10000, 14000, 22000, //
+    30000, 40000, 60000, 85000, 150000
+];
+
+const DEF_LANG = 'vi';
 
 var altp = {
     rooms: [],
     dummyUsers: dummyUsers,
     messages: gameOverMessages,
-    socks: {}
+    socks: {},
+    questions: {}
 };
 
 altp.init = function (io) {
+    getAllQuestionFromDb();
+
     io.on('connection', function (socket) {
         var sock = socket;
 
@@ -52,11 +64,11 @@ altp.init = function (io) {
                         reqUser.address || '',
                         reqUser.fbId || -1,
                         reqUser.avatar || '',
-                        reqUser.lang || 'vi');
+                        reqUser.lang || DEF_LANG);
 
                     mongoDb.users.insert(user, function (err, user) {
+                        console.log('login:insert:ERR:' + JSON.stringify(err));
                         console.log('login:insert:user:' + JSON.stringify(user));
-                        console.log('login:insert:err:' + JSON.stringify(err));
 
                     });
 
@@ -93,13 +105,12 @@ altp.init = function (io) {
                 var room = null;
                 var i;
 
-                console.log('search: ' + JSON.stringify(user) + ' searching...');
+                console.log('search: ' + user.name + ' searching...');
 
                 for (i = 0; i < altp.rooms.length; i++) {
                     if (altp.rooms[i].users.length == 1) {
                         if (altp.rooms[i].users[0].id != user.id) {
-                            console.log('search room: 0:' + ' name:' + altp.rooms[i].users[0].name + ' totalScore:' + altp.rooms[i].users[0].totalScore);
-                            console.log('search room: user: ' + ' name:' + user.name + ' totalScore:' + user.totalScore);
+                            console.log('search room: user: ' + user.name + ' totalScore:' + user.totalScore);
                             room = altp.rooms[i];
                             room.users.push(user);
                             break;
@@ -135,7 +146,6 @@ altp.init = function (io) {
                     room.answerRight = 0;
                     room.questionIndex = 0;
 
-                    clearRoom(room);
                     user.room = room.id;
                     joinRoom(sock, room);
 
@@ -144,7 +154,7 @@ altp.init = function (io) {
                         dummyUsers: getDummyUsers(NUM_DUMMY_USERS)
                     };
 
-                    console.log('searchCallback: room:' + dataSearch.room.id + ' with user:' + room.users.length);
+                    console.log('searchCallback: room:' + dataSearch.room.id + ' with total users:' + room.users.length);
 
                     __io.to(room.id).emit('search', dataSearch);
                 };
@@ -155,14 +165,22 @@ altp.init = function (io) {
                 }
 
                 // create a new room
-                getRandomQuestion(function (questions) {
+                var getQuestionCallback = function (questions) {
                     room = new Room('room#' + altp.rooms.length, [user], questions);
                     altp.rooms.push(room);
 
                     console.log('searchCallback: create room: ' + JSON.stringify(room));
 
                     processRoom(room);
-                });
+                };
+
+                // if questions is not loaded to memory -> get from database
+                if (altp.questions.loadedToMemory) {
+                    getRandomQuestion(getQuestionCallback);
+                } else {
+                    getRandomQuestionFromDb(getQuestionCallback);
+                }
+
             });
         };
 
@@ -177,7 +195,7 @@ altp.init = function (io) {
                 var isAllReady = true;
 
                 // for reconnect
-                joinRoom(sock,room);
+                joinRoom(sock, room);
 
                 console.log('play: ' + user.name + ' ready!');
 
@@ -221,7 +239,7 @@ altp.init = function (io) {
                 var answerIndex = data.answerIndex;
 
                 // for reconnect
-                joinRoom(sock,room);
+                joinRoom(sock, room);
 
                 var i;
                 var dataResponse;
@@ -246,13 +264,13 @@ altp.init = function (io) {
                 }
 
                 if (!isAllAnswered) {
-                    console.log('waiting for other answer...');
+                    console.log('answer: waiting for other answer...');
                     __io.to(room.id).emit('answer', {notAllAnswered: true});
                     return;
                 }
 
-                console.log('user ' + room.users[0].name + ' answered: ' + room.users[0].answerIndex);
-                console.log('user ' + room.users[1].name + ' answered: ' + room.users[1].answerIndex);
+                console.log('answer: user ' + room.users[0].name + ' answered: ' + room.users[0].answerIndex);
+                console.log('answer: user ' + room.users[1].name + ' answered: ' + room.users[1].answerIndex);
 
                 // calculate gameOver
                 var answerRightIndex = room.questions[room.questionIndex].answerRight;
@@ -351,7 +369,7 @@ altp.init = function (io) {
                 var room = getRoomById(data.room.id);
 
                 // for reconnect
-                joinRoom(sock,room);
+                joinRoom(sock, room);
 
                 var numUserAnswer = 0;
                 var i;
@@ -366,8 +384,7 @@ altp.init = function (io) {
                     return;
                 }
 
-
-                console.log('set answer index to -1');
+                console.log('answerNext: set answer index to -1');
                 for (i = 0; i < room.users.length; i++) {
                     room.users[i].answerIndex = -1;
                 }
@@ -396,7 +413,7 @@ altp.init = function (io) {
                 var room = getRoomById(data.room.id);
 
                 // for reconnect
-                joinRoom(sock,room);
+                joinRoom(sock, room);
 
                 console.log('gameOver: ' + user.name);
 
@@ -428,6 +445,10 @@ altp.init = function (io) {
             getUserById(data.user.id, function (err, user) {
                 var room = getRoomById(data.room.id);
 
+                if (!room) {
+                    console.log('quit: room removed');
+                    return;
+                }
                 // sub score if a use quit
                 if (room.users[0].id == user.id) {
                     subScore(room.users[0], room.questionIndex);
@@ -494,6 +515,9 @@ var joinRoom = function (sock, room) {
  * @param room
  */
 var clearRoom = function (room) {
+    if (!altp.socks[room.id]) {
+        return;
+    }
     var roomSocket = altp.socks[room.id];
     for (var i = 0; i < roomSocket.length; i++) {
         roomSocket[i].leave(room.id);
@@ -507,8 +531,7 @@ var clearRoom = function (room) {
  */
 var getDummyUsers = function (numUsers) {
     var random = Math.floor(Math.random() * (altp.dummyUsers.length - numUsers));
-    var dummyUsers = altp.dummyUsers.slice(random, random + numUsers);
-    return dummyUsers;
+    return altp.dummyUsers.slice(random, random + numUsers);
 };
 
 /**
@@ -519,12 +542,11 @@ var getDummyUsers = function (numUsers) {
  */
 var getGameOverMessages = function (lang) {
     var random = Math.floor(Math.random() * 10) + 1;
-    var result = {
+    return {
         win: altp.messages.win[random % altp.messages.win.length],
         lose: altp.messages.lose[random % altp.messages.lose.length],
         draw: altp.messages.draw[random % altp.messages.draw.length]
     };
-    return result;
 };
 
 /**
@@ -533,14 +555,7 @@ var getGameOverMessages = function (lang) {
  * */
 var addScore = function (user, questionIndex) {
     user.winner = true;
-
-    var scoreTable = [
-        200, 400, 600, 1000, 2000, //
-        3000, 6000, 10000, 14000, 22000, //
-        30000, 40000, 60000, 85000, 150000
-    ];
-
-    user.score = scoreTable[questionIndex];
+    user.score = SCORE_TABLE[questionIndex];
 };
 
 /**
@@ -551,11 +566,11 @@ var subScore = function (user, questionIndex) {
     if (questionIndex <= 1) {
         user.score = 0;
     } else if (questionIndex < 5) {
-        user.score = 200;
+        user.score = SCORE_TABLE[0];
     } else if (questionIndex < 10) {
-        user.score = 2000;
+        user.score = SCORE_TABLE[4];
     } else {
-        user.score = 22000;
+        user.score = SCORE_TABLE[9];
     }
 };
 
@@ -581,10 +596,52 @@ var getRoomById = function (roomId) {
 };
 
 /**
- * get random 15 questions from database
- * */
+ * get all questions from database
+ */
+var getAllQuestionFromDb = function () {
+    altp.questions.loadedToMemory = false;
+    mongoDb.questions.find(function (err, data) {
+        console.log('getAllQuestionFromDb: ERR:' + err);
+        console.log('getAllQuestionFromDb: size:' + data.length);
+
+        var size = data.length;
+        for (var i = 0; i < size; i++) {
+            if (!altp.questions[data[i].level]) {
+                altp.questions[data[i].level] = [];
+            }
+            altp.questions[data[i].level].push(data[i]);
+        }
+
+        altp.questions.loadedToMemory = true;
+    });
+};
+
+/**
+ * get random 15 questions from memory
+ * @param callback
+ */
 var getRandomQuestion = function (callback) {
     var QUESTION_NUMBERS = 15;
+    var questions = [];
+    var question;
+    var item;
+    var index = 0;
+
+    for (var i = 1; i <= QUESTION_NUMBERS; i++) {
+        index = Math.randomBetween(0, altp.questions[i].length - 1);
+        item = altp.questions[i][index];
+        question = new Question(item.question, item.answers, item.answerRight, Math.floor(item.level));
+        questions.push(question);
+        console.log('from mem: ' + JSON.stringify(item));
+    }
+    callback(questions);
+};
+
+/**
+ * get random 15 questions from database
+ * @Deprecated
+ * */
+var getRandomQuestionFromDb = function (callback) {
     var questions = [];
     var random = Math.random();
 
@@ -609,6 +666,8 @@ var getRandomQuestion = function (callback) {
             questions.push(question);
 
             console.log('from db: ' + JSON.stringify(item));
+
+            question.questionIndex = Math.min(QUESTION_NUMBERS, question.questionIndex);
 
             if (questions.length == QUESTION_NUMBERS) {
 
