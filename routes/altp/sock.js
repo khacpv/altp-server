@@ -98,7 +98,6 @@ altp.init = function (io) {
          * */
         var search = function (data) {
             getUserById(data.user.id, function (err, user) {
-
                 if (user == null) {
                     sock.emit('search', {err: 'user not found'});
                     return;
@@ -109,34 +108,39 @@ altp.init = function (io) {
 
                 console.log('search: ' + user.name + ' searching...');
 
+                var exitedRoomId = [];
+
+                // find an available room (has 1 user only)
                 for (i = 0; i < altp.rooms.length; i++) {
-                    if (altp.rooms[i].users.length == 1) {
-                        if (altp.rooms[i].users[0].id != user.id) {
+                    if (altp.rooms[i].users.length == 1) {  // has 1 user
+                        if (altp.rooms[i].users[0].id != user.id) { // not my user
                             console.log('search room: user: ' + user.name + ' totalScore:' + user.totalScore);
                             room = altp.rooms[i];
                             room.users.push(user);
                             break;
+                        }
+                        else {   // if I'm in the room, mark to clear
+                            exitedRoomId.push(i);
+                        }
+                    } else if (altp.rooms[i].users.length == 2) { // room has 2 user
+                        if (altp.rooms[i].users[0].id == user.id || altp.rooms[i].users[1].id == user.id) { // room contain user
+                            exitedRoomId.push(i);
                         }
                     }
                 }
 
                 // remove old room
                 if (room == null) {
-                    var existRoomId = [];
-                    for (i = 0; i < altp.rooms.length; i++) {
-                        if (altp.rooms[i].users[0] && altp.rooms[i].users[0].id == user.id) {
-                            existRoomId.push(i);
+                    // clear exited room
+                    if (exitedRoomId.length > 0) {
+                        for (i = exitedRoomId.length - 1; i >= 0; i--) {
+                            console.log('remove room: ' + altp.rooms[exitedRoomId[i]].id);
+                            clearRoom(altp.rooms[exitedRoomId[i]]);
                         }
-                        else if (altp.rooms[i].users[1] && altp.rooms[i].users[1].id == user.id) {
-                            existRoomId.push(i);
-                        }
-                    }
-                    for (i = existRoomId.length - 1; i >= 0; i--) {
-                        console.log('remove room: ' + altp.rooms[existRoomId[i]].id);
-                        altp.rooms.splice(existRoomId[i]);
                     }
                 }
 
+                // add user to room, reset info
                 var processRoom = function (room) {
                     // refresh state users
                     for (i = 0; i < room.users.length; i++) {
@@ -145,10 +149,10 @@ altp.init = function (io) {
                         room.users[i].score = 0;
                     }
 
+                    // refresh state of room
                     room.answerRight = 0;
                     room.questionIndex = 0;
 
-                    // TODO remove old room
                     user.room = room.id;
                     joinRoom(sock, room);
 
@@ -162,27 +166,27 @@ altp.init = function (io) {
                     __io.to(room.id).emit('search', dataSearch);
                 };
 
-                if (room != null) {
-                    processRoom(room);
+                // if room is not exited, create a new one
+                if (room == null) {
+                    var getQuestionCallback = function (questions) {
+                        room = new Room('room#' + altp.rooms.length + '#' + user.id, [user], questions);
+                        altp.rooms.push(room);
+
+                        console.log('searchCallback: create room: ' + JSON.stringify(room));
+
+                        processRoom(room);
+                    };
+
+                    // if questions is not loaded to memory -> get from database
+                    if (altp.questions.loadedToMemory) {
+                        getRandomQuestion(getQuestionCallback);
+                    } else {
+                        getRandomQuestionFromDb(getQuestionCallback);
+                    }
                     return;
                 }
 
-                // create a new room
-                var getQuestionCallback = function (questions) {
-                    room = new Room('room#' + altp.rooms.length, [user], questions);
-                    altp.rooms.push(room);
-
-                    console.log('searchCallback: create room: ' + JSON.stringify(room));
-
-                    processRoom(room);
-                };
-
-                // if questions is not loaded to memory -> get from database
-                if (altp.questions.loadedToMemory) {
-                    getRandomQuestion(getQuestionCallback);
-                } else {
-                    getRandomQuestionFromDb(getQuestionCallback);
-                }
+                processRoom(room);
 
             });
         };
@@ -193,6 +197,12 @@ altp.init = function (io) {
          * */
         var play = function (data) {
             getUserById(data.user.id, function (err, user) {
+                if (user == null) {
+                    console.log('err: user not found');
+                    sock.emit('err', {err: 'user not found'});
+                    return;
+                }
+
                 var room = getRoomById(data.room.id);
                 var i;
                 var isAllReady = true;
@@ -238,6 +248,12 @@ altp.init = function (io) {
          * */
         var answer = function (data) {
             getUserById(data.user.id, function (err, user) {
+                if (user == null) {
+                    console.log('err: user not found');
+                    sock.emit('err', {err: 'user not found'});
+                    return;
+                }
+
                 var room = getRoomById(data.room.id);
                 var answerIndex = data.answerIndex;
 
@@ -266,7 +282,7 @@ altp.init = function (io) {
                     }
                 }
 
-                if (!isAllAnswered) {
+                if (!isAllAnswered || room.users.length < 2) {
                     console.log('answer: waiting for other answer...');
                     __io.to(room.id).emit('answer', {notAllAnswered: true});
                     return;
@@ -369,6 +385,12 @@ altp.init = function (io) {
          * */
         var answerNext = function (data) {
             getUserById(data.user.id, function (err, user) {
+                if (user == null) {
+                    console.log('err: user not found');
+                    sock.emit('err', {err: 'user not found'});
+                    return;
+                }
+
                 var room = getRoomById(data.room.id);
 
                 // for reconnect
@@ -413,6 +435,12 @@ altp.init = function (io) {
          * */
         var gameOver = function (data) {
             getUserById(data.user.id, function (err, user) {
+                if (user == null) {
+                    console.log('err: user not found');
+                    sock.emit('err', {err: 'user not found'});
+                    return;
+                }
+
                 var room = getRoomById(data.room.id);
 
                 // for reconnect
@@ -512,26 +540,56 @@ altp.init = function (io) {
  * @param room
  */
 var joinRoom = function (sock, room) {
+    // TODO check if socket is in room already -> dont need to join again
+    var i;
     sock.join(room.id);
     if (!altp.socks[room.id]) {
         altp.socks[room.id] = [];
     }
-    altp.socks[room.id].push(sock);
+    var isSockInRoom = false;
+    for (i = altp.socks[room.id].length; i >= 0; i--) {
+        if (altp.socks[room.id][i] && altp.socks[room.id][i].id == sock.id) {
+            isSockInRoom = true;
+            break;
+        }
+    }
+    if (!isSockInRoom) {
+        console.log('joinRoom: add sock ' + sock.id + ' into room: ' + room.id);
+        altp.socks[room.id].push(sock);
+    } else {
+        console.log('joinRoom: sock ' + sock.id + ' already in room: ' + room.id);
+    }
 };
 
 /**
- * clear socket in room
+ * clear socket in room & room in altp.rooms
  * @param room
  */
 var clearRoom = function (room) {
     if (!altp.socks[room.id]) {
+        console.log('dont need clear room:' + room.id);
         return;
     }
+    var i;
+
+    // leave socket
     var roomSocket = altp.socks[room.id];
-    for (var i = 0; i < roomSocket.length; i++) {
+    for (i = 0; i < roomSocket.length; i++) {
+        console.log('clearRoom: socket:' + roomSocket[i].id + ' leaved room:' + room.id);
         roomSocket[i].leave(room.id);
     }
+
     delete altp.socks[room.id];
+
+    // remove room
+    for (i = altp.rooms.length - 1; i >= 0; i--) {
+        if (altp.rooms[i].id == room.id) {
+            altp.rooms.splice(i);
+            break;
+        }
+    }
+
+    console.log('roomSock: ' + JSON.stringify(altp.socks[room.id]));
 };
 
 /**
