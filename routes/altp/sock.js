@@ -111,7 +111,7 @@ altp.init = function (io) {
                 var exitedRoomId = [];
 
                 // find an available room (has 1 user only)
-                for (i = 0; i < altp.rooms.length; i++) {
+                for (i = altp.rooms.length-1; i >=0; i--) {
                     if (altp.rooms[i].users.length == 1) {  // has 1 user
                         if (altp.rooms[i].users[0].id != user.id) { // not my user
                             console.log('search room: user: ' + user.name + ' totalScore:' + user.totalScore);
