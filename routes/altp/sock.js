@@ -295,6 +295,7 @@ altp.init = function (io) {
 
                 var i;
                 var dataResponse;
+                var isPlayWithBot = false;
 
                 //console.log('answer: ' + user.name + ' answered '+data.answerIndex);
 
@@ -306,6 +307,7 @@ altp.init = function (io) {
                     else if (room.users[i].isAutoBot) {
                         // TODO random bot answer right or wrong?
                         room.users[i].answerIndex = answerRightIndex;
+                        isPlayWithBot = true;
                     }
                 }
 
@@ -409,15 +411,24 @@ altp.init = function (io) {
                         gameOver(data);
                     }, 5000);
                 } else {
-                    dataResponse = {
-                        answerRight: room.questions[room.questionIndex].answerRight,
-                        answerUsers: room.users
+                    var sendAnswerCallback = function () {
+                        dataResponse = {
+                            answerRight: room.questions[room.questionIndex].answerRight,
+                            answerUsers: room.users
+                        };
+
+                        console.log('answerCallback: answerRight:' + dataResponse.answerRight);
+
+                        room.questionIndex++;
+                        __io.to(room.id).emit('answer', dataResponse);
                     };
 
-                    console.log('answerCallback: answerRight:' + dataResponse.answerRight);
+                    if (isPlayWithBot) {
+                        setTimeout(sendAnswerCallback, Math.randomBetween(0, 2) * 1000);
+                        return;
+                    }
 
-                    room.questionIndex++;
-                    __io.to(room.id).emit('answer', dataResponse);
+                    sendAnswerCallback();
                 }
             });
         };
