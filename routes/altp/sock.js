@@ -111,7 +111,7 @@ altp.init = function (io) {
                 var exitedRoomId = [];
 
                 // find an available room (has 1 user only)
-                for (i = altp.rooms.length-1; i >=0; i--) {
+                for (i = altp.rooms.length - 1; i >= 0; i--) {
                     if (altp.rooms[i].users.length == 1) {  // has 1 user
                         if (altp.rooms[i].users[0].id != user.id) { // not my user
                             console.log('search room: user: ' + user.name + ' totalScore:' + user.totalScore);
@@ -123,7 +123,7 @@ altp.init = function (io) {
                             exitedRoomId.push(i);
                         }
                     } else if (altp.rooms[i].users.length == 2) { // room has 2 user
-                        if (altp.rooms[i].users[0].id == user.id || altp.rooms[i].users[1].id == user.id) { // room contain user
+                        if (altp.rooms[i].users[0].id == user.id || altp.rooms[i].users[1].id == user.id) { // room contain me
                             exitedRoomId.push(i);
                         }
                     }
@@ -166,28 +166,43 @@ altp.init = function (io) {
                     __io.to(room.id).emit('search', dataSearch);
                 };
 
-                // if room is not exited, create a new one
-                if (room == null) {
-                    var getQuestionCallback = function (questions) {
-                        room = new Room('room#' + altp.rooms.length + '#' + user.id, [user], questions);
-                        altp.rooms.push(room);
+                // process room
+                if (room != null) {
+                    clearTimeout(sock.autoBotTimeOut);
+                    delete sock.autoBotTimeOut;
 
-                        console.log('searchCallback: create room: ' + JSON.stringify(room));
-
-                        processRoom(room);
-                    };
-
-                    // if questions is not loaded to memory -> get from database
-                    if (altp.questions.loadedToMemory) {
-                        getRandomQuestion(getQuestionCallback);
-                    } else {
-                        getRandomQuestionFromDb(getQuestionCallback);
-                    }
+                    processRoom(room);
                     return;
                 }
 
-                processRoom(room);
+                // if room is not exited, create a new one
+                var getQuestionCallback = function (questions) {
+                    room = new Room('room#' + altp.rooms.length + '#' + user.id, [user], questions);
+                    altp.rooms.push(room);
 
+                    console.log('searchCallback: create room: ' + JSON.stringify(room));
+
+                    // TODO add a bot after timeout: change timeout
+                    sock.autoBotTimeOut = setTimeout(function () {
+                        console.log('searchCallback: add a bot');
+
+                        var botIndex = Math.randomBetween(0, altp.dummyUsers.length - 1);
+                        var autoBot = altp.dummyUsers[botIndex];
+                        autoBot.isAutoBot = true;
+                        room.users.push(autoBot);
+
+                        processRoom(room);
+                    }, Math.randomBetween(10, 15) * 1000);  // find user between 10 to 15 seconds
+
+                    processRoom(room);
+                };
+
+                // if questions is not loaded to memory -> get from database
+                if (altp.questions.loadedToMemory) {
+                    getRandomQuestion(getQuestionCallback);
+                } else {
+                    getRandomQuestionFromDb(getQuestionCallback);
+                }
             });
         };
 
@@ -206,6 +221,7 @@ altp.init = function (io) {
                 var room = getRoomById(data.room.id);
                 var i;
                 var isAllReady = true;
+                var isPlayWithBot = false;
 
                 // for reconnect
                 joinRoom(sock, room);
@@ -215,7 +231,9 @@ altp.init = function (io) {
                 for (i = 0; i < room.users.length; i++) {
                     if (room.users[i].id == user.id) {
                         room.users[i].ready = true;
-                        break;
+                    }
+                    else if (room.users[i].isAutoBot) {
+                        isPlayWithBot = true;
                     }
                 }
 
@@ -227,18 +245,31 @@ altp.init = function (io) {
                 }
 
                 // if others user is not ready --> show waiting dialog
-                if (!isAllReady) {
+                if (!isAllReady && !isPlayWithBot) {
                     sock.emit('play', {notReady: true});
                     return;
                 }
 
-                var dataResponse = {
-                    question: room.questions[room.questionIndex]
+                // all ready or is play with bot
+
+                var sendPlayCallback = function () {
+                    var dataResponse = {
+                        question: room.questions[room.questionIndex]
+                    };
+
+                    console.log('playCallback: question:' + dataResponse.question.question);
+
+                    __io.to(room.id).emit('play', dataResponse);
                 };
 
-                console.log('playCallback: question:' + dataResponse.question.question);
+                if (!isPlayWithBot) {
+                    sendPlayCallback();
+                    return;
+                }
 
-                __io.to(room.id).emit('play', dataResponse);
+                // TODO change timeout
+                console.log('playCallback: all player should ready after 2000 ms');
+                setTimeout(sendPlayCallback, 2000);
             });
         };
 
@@ -257,6 +288,8 @@ altp.init = function (io) {
                 var room = getRoomById(data.room.id);
                 var answerIndex = data.answerIndex;
 
+                var answerRightIndex = room.questions[room.questionIndex].answerRight;
+
                 // for reconnect
                 joinRoom(sock, room);
 
@@ -265,16 +298,20 @@ altp.init = function (io) {
 
                 //console.log('answer: ' + user.name + ' answered '+data.answerIndex);
 
-                for (var j = 0; j < room.users.length; j++) {
-                    if (room.users[j].id == user.id) {
+                for (i = 0; i < room.users.length; i++) {
+                    if (room.users[i].id == user.id) {
                         user.answerIndex = answerIndex;
-                        room.users[j].answerIndex = answerIndex;
-                        break;
+                        room.users[i].answerIndex = answerIndex;
+                    }
+                    else if (room.users[i].isAutoBot) {
+                        // TODO random bot answer right or wrong?
+                        room.users[i].answerIndex = answerRightIndex;
                     }
                 }
 
                 var isAllAnswered = true;
 
+                // if have an answerIndex < 0 -> not all answered
                 for (i = 0; i < room.users.length; i++) {
                     if (room.users[i].answerIndex < 0) {
                         isAllAnswered = false;
@@ -282,6 +319,7 @@ altp.init = function (io) {
                     }
                 }
 
+                // calculate gameOver
                 if (!isAllAnswered || room.users.length < 2) {
                     console.log('answer: waiting for other answer...');
                     __io.to(room.id).emit('answer', {notAllAnswered: true});
@@ -291,14 +329,15 @@ altp.init = function (io) {
                 console.log('answer: user ' + room.users[0].name + ' answered: ' + room.users[0].answerIndex);
                 console.log('answer: user ' + room.users[1].name + ' answered: ' + room.users[1].answerIndex);
 
-                // calculate gameOver
-                var answerRightIndex = room.questions[room.questionIndex].answerRight;
-
                 // user 1 win
                 if (answerRightIndex == room.users[0].answerIndex
                     && answerRightIndex != room.users[1].answerIndex) {
                     getUserById(room.users[0].id, function (err, winnerUser) {
-                        addScore(winnerUser, room.questionIndex);
+                        // auto-bot should not be found from database
+                        if (winnerUser) {
+                            addScore(winnerUser, room.questionIndex);
+                        }
+
                         addScore(room.users[0], room.questionIndex);
 
                         subScore(room.users[1], room.questionIndex);
@@ -317,7 +356,11 @@ altp.init = function (io) {
                 else if (answerRightIndex != room.users[0].answerIndex
                     && answerRightIndex == room.users[1].answerIndex) {
                     getUserById(room.users[1].id, function (err, winnerUser) {
-                        addScore(winnerUser, room.questionIndex);
+                        // auto-bot should not be found from database
+                        if (winnerUser) {
+                            addScore(winnerUser, room.questionIndex);
+                        }
+
                         addScore(room.users[1], room.questionIndex);
 
                         subScore(room.users[0], room.questionIndex);
@@ -455,7 +498,7 @@ altp.init = function (io) {
                 dataResponse.messages = getGameOverMessages('vi');
 
                 for (var i = 0; i < room.users.length; i++) {
-                    if (room.users[i].winner) {
+                    if (room.users[i].winner && !room.users[i].isAutoBot) {
                         room.users[i].totalScore += room.users[i].score;
 
                         mongoDb.users.update({id: room.users[i].id}, room.users[i], {upsert: true}, function (err, data) {

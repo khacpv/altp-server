@@ -9,6 +9,7 @@ var User = function(id, name, address, fbId, avatar, lang){
     this.score = 0;
     this.totalScore = 0;
     this.lang = lang;
+    this.isAutoBot = false;
 
     this.toString = function () {
         return this.id + '#' + name;
