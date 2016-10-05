@@ -18,7 +18,7 @@ var mongoDb = require(__appname + '/mongodb/mongodb');
 var dummyUsers = require(__appname + '/data/dummy_user');
 var gameOverMessages = require(__appname + '/data/gameover_message');
 
-const NUM_DUMMY_USERS = 6;  // 6 search players
+const NUM_DUMMY_USERS = 5;  // 5 search players
 const QUESTION_NUMBERS = 15;
 
 const SCORE_TABLE = [
