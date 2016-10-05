@@ -164,7 +164,9 @@ altp.init = function (io) {
 
                     console.log('searchCallback: ' + dataSearch.room.id + ' with total users:' + room.users.length);
 
-                    __io.to(room.id).emit('search', dataSearch);
+                    if (room.users.length > 1) {
+                        __io.to(room.id).emit('search', dataSearch);
+                    }
                 };
 
                 // process room
