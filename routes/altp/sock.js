@@ -34,7 +34,8 @@ var altp = {
     dummyUsers: dummyUsers,
     messages: gameOverMessages,
     socks: {},
-    questions: {}
+    questions: {},
+    autoBotTimeout: {} // timeout to add bot
 };
 
 altp.init = function (io) {
@@ -161,15 +162,16 @@ altp.init = function (io) {
                         dummyUsers: getDummyUsers(NUM_DUMMY_USERS)
                     };
 
-                    console.log('searchCallback: room:' + dataSearch.room.id + ' with total users:' + room.users.length);
+                    console.log('searchCallback: ' + dataSearch.room.id + ' with total users:' + room.users.length);
 
                     __io.to(room.id).emit('search', dataSearch);
                 };
 
                 // process room
                 if (room != null) {
-                    clearTimeout(sock.autoBotTimeOut);
-                    delete sock.autoBotTimeOut;
+                    console.log('clear interval in room: ' + room.id);
+                    clearInterval(altp.autoBotTimeout[room.id]);
+                    delete altp.autoBotTimeout[room.id];
 
                     processRoom(room);
                     return;
@@ -180,18 +182,21 @@ altp.init = function (io) {
                     room = new Room('room#' + altp.rooms.length + '#' + user.id, [user], questions);
                     altp.rooms.push(room);
 
-                    console.log('searchCallback: create room: ' + JSON.stringify(room));
+                    console.log('searchCallback: create room: ' + room.id);
 
                     // TODO add a bot after timeout: change timeout
-                    sock.autoBotTimeOut = setTimeout(function () {
-                        console.log('searchCallback: add a bot');
+                    altp.autoBotTimeout[room.id] = setTimeout(function () {
+                        if (room.users.length < 2) {
+                            var botIndex = Math.randomBetween(0, altp.dummyUsers.length - 1);
+                            var autoBot = altp.dummyUsers[botIndex];
+                            autoBot.isAutoBot = true;
+                            autoBot.totalScore = Math.randomBetween(10, 100) * 1000;
+                            room.users.push(autoBot);
 
-                        var botIndex = Math.randomBetween(0, altp.dummyUsers.length - 1);
-                        var autoBot = altp.dummyUsers[botIndex];
-                        autoBot.isAutoBot = true;
-                        room.users.push(autoBot);
+                            console.log('searchCallback: add a bot: ' + autoBot.name);
 
-                        processRoom(room);
+                            processRoom(room);
+                        }
                     }, Math.randomBetween(10, 15) * 1000);  // find user between 10 to 15 seconds
 
                     processRoom(room);
@@ -200,9 +205,10 @@ altp.init = function (io) {
                 // if questions is not loaded to memory -> get from database
                 if (altp.questions.loadedToMemory) {
                     getRandomQuestion(getQuestionCallback);
-                } else {
-                    getRandomQuestionFromDb(getQuestionCallback);
+                    return;
                 }
+
+                getRandomQuestionFromDb(getQuestionCallback);
             });
         };
 
@@ -267,7 +273,7 @@ altp.init = function (io) {
                     return;
                 }
 
-                // TODO change timeout
+                // TODO autoBot ready: change timeout
                 console.log('playCallback: all player should ready after 2000 ms');
                 setTimeout(sendPlayCallback, 2000);
             });
@@ -518,9 +524,12 @@ altp.init = function (io) {
                     }
                 }
 
-                console.log('gameOverCallback: room: ' + JSON.stringify(room));
+                console.log('gameOverCallback: room: ' + room.id);
 
                 __io.to(room.id).emit('gameOver', dataResponse);
+
+                // delete current room (once user quit)
+                clearRoom(room);
             });
         };
 
@@ -556,17 +565,7 @@ altp.init = function (io) {
 
                 __io.to(room.id).emit('quit', dataResponse);
 
-                // delete current room (one user quit)
-                if (!isPlay) {
-                    for (var i = altp.rooms.length - 1; i >= 0; i--) {
-                        if (room.id == altp.rooms[i].id) {
-                            console.log('quit: delete room ' + room.id);
-                            altp.rooms.splice(i);
-                            break;
-                        }
-                    }
-                }
-
+                // delete current room (once user quit)
                 clearRoom(room);
             });
         };
@@ -753,7 +752,7 @@ var getRandomQuestion = function (callback) {
         item = altp.questions[i][index];
         question = new Question(item.question, item.answers, item.answerRight, Math.floor(item.level));
         questions.push(question);
-        console.log('from mem: ' + JSON.stringify(item));
+        // console.log('from mem: ' + JSON.stringify(item));
     }
     callback(questions);
 };
