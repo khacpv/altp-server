@@ -313,8 +313,8 @@ altp.init = function (io) {
                         room.users[i].answerIndex = answerIndex;
                     }
                     else if (room.users[i].isAutoBot) {
-                        // TODO random bot answer right or wrong?
-                        room.users[i].answerIndex = answerRightIndex;
+                        // TODO random bot answer: add user level?
+                        room.users[i].answerIndex = getBotAnswerIndex(room.questionIndex, answerRightIndex);
                         isPlayWithBot = true;
                     }
                 }
@@ -517,7 +517,7 @@ altp.init = function (io) {
                 dataResponse.messages = getGameOverMessages('vi');
 
                 for (var i = 0; i < room.users.length; i++) {
-                    if (room.users[i].winner && !room.users[i].isAutoBot) {
+                    if (!room.users[i].isAutoBot) {
                         room.users[i].totalScore += room.users[i].score;
 
                         mongoDb.users.update({id: room.users[i].id}, room.users[i], {upsert: true}, function (err, data) {
@@ -588,6 +588,21 @@ altp.init = function (io) {
 };
 
 /************** UTILITIES **************/
+
+/**
+ * @return number bot answer index
+ */
+var getBotAnswerIndex = function (level, rightIndex) {
+    if (level < 9) {
+        return rightIndex;
+    }
+
+    var rd = Math.randomBetween(0, 10);
+    if (rd < 8) {
+        return rightIndex;
+    }
+    return (rightIndex + 1) % 4;
+};
 
 /**
  * join socket into room
