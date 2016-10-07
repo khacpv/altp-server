@@ -42,16 +42,12 @@ Splash.loadFonts = function () {
 
 Splash.addGameStates = function () {
     // TODO remove here
-    GameInfo = {};
-    GameOpponent = {};
-    GamePlay = {};
-    GameOver = {};
 
-    game.state.add(STATES.LOGIN, GameLogin);
-    game.state.add(STATES.INFO, GameInfo);
-    game.state.add(STATES.OPPONENT, GameOpponent);
-    game.state.add(STATES.PLAY, GamePlay);
-    game.state.add(STATES.GAMEOVER, GameOver);
+    game.state.add(STATES.LOGIN, StateLogin);
+    // game.state.add(STATES.INFO, GameInfo);
+    // game.state.add(STATES.OPPONENT, GameOpponent);
+    // game.state.add(STATES.PLAY, GamePlay);
+    // game.state.add(STATES.GAMEOVER, GameOver);
 };
 
 Splash.addGameMusic = function () {

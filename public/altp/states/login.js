@@ -1,6 +1,6 @@
-var GameLogin = {};
+var StateLogin = {};
 
-GameLogin.create = function () {
+StateLogin.create = function () {
     fillBg();
 
 };
