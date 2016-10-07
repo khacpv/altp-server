@@ -2,8 +2,14 @@ var Splash = {};
 
 var music;
 
+var dummyTexts = [
+    'ai la trieu phu',
+    'cho',
+    'meo',
+    'ga'
+];
+
 Splash.loadScripts = function () {
-    // TODO load script here
     for (var prop in STATES) {
         if (STATES.hasOwnProperty(prop)) {
             var scriptName = STATES[prop];
@@ -92,6 +98,8 @@ Splash.addViews = function () {
     var spriteProgress = game.add.sprite(GAME_WIDTH / 2, spriteOnline.position.y + spriteOnline.height + 50, IMAGES.answer0);
     spriteProgress.scale.setTo(0.5, 0.5);
     spriteProgress.position.x = GAME_WIDTH / 2 - spriteProgress.width / 2;
+    
+    // TODO draw float-texts
 };
 
 /**============== GAME life cycle ================**/
