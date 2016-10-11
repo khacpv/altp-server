@@ -1,13 +1,51 @@
 var Splash = {};
 
-var music;
-
-var dummyTexts = [
-    'ai la trieu phu',
-    'cho',
-    'meo',
-    'ga'
+Splash.dummyTexts = [
+    {
+        text: 'ai la trieu phu',
+        x: 10,
+        y: 60,
+        alpha: 0.2,
+        velocity: 0.5
+    },
+    {
+        text: 'online',
+        x: 20,
+        y: 70,
+        alpha: 0.4,
+        velocity: 0.6
+    },
+    {
+        text: 'multiplayer',
+        x: 60,
+        y: 80,
+        alpha: 0.2,
+        velocity: 0.4
+    }
 ];
+
+/**
+ * must be match with file name
+ */
+Splash.image = {
+    altp: 'altp',
+    online: 'online',
+    answer0: 'answer0'
+};
+
+/**
+ * must be match with file name
+ */
+Splash.audio = {
+    BACKGROUND_MUSIC: 'background_music',
+    BG_MUSIC: 'bgmusic'
+};
+
+//============== local variable ======================
+Splash.startTime = new Date().getTime();
+Splash.percentLoaded = 0;
+Splash.textPercent = {};
+Splash.floatText = [];
 
 Splash.loadScripts = function () {
     for (var prop in STATES) {
@@ -18,19 +56,19 @@ Splash.loadScripts = function () {
     }
 };
 
-Splash.loadAudio = function () {
-    for (var prop in AUDIO) {
-        if (AUDIO.hasOwnProperty(prop)) {
-            var audioName = AUDIO[prop];
+Splash.loadAudio = function (audios) {
+    for (var prop in audios) {
+        if (audios.hasOwnProperty(prop)) {
+            var audioName = audios[prop];
             game.load.audio(audioName, DIR_AUDIO + audioName + '.mp3');
         }
     }
 };
 
-Splash.loadImages = function () {
-    for (var prop in IMAGES) {
-        if (IMAGES.hasOwnProperty(prop)) {
-            var imageName = IMAGES[prop];
+Splash.loadImages = function (images) {
+    for (var prop in images) {
+        if (images.hasOwnProperty(prop)) {
+            var imageName = images[prop];
             game.load.image(imageName, DIR_IMAGE + imageName + '.png');
         }
     }
@@ -51,51 +89,63 @@ Splash.addGameStates = function () {
 };
 
 Splash.addGameMusic = function () {
-    // TODO Add Game music
-    music = game.add.audio(AUDIO.ANS_A);
-    music.loop = false;
-    music.play();
+    // TODO Add Game musicBackground
+    Splash.musicBackground = game.add.audio(Splash.audio.BG_MUSIC);
+    Splash.musicBackground.loop = true;
+    Splash.musicBackground.play();
 };
 
 Splash.addViews = function () {
 
-    // LOGO: AI LA TRIEU PHU
-    //var style = {
-    //    font: "32px Arial",
-    //    fill: "#FFFFFF",
-    //    wordWrap: true,
-    //    wordWrapWidth: GAME_WIDTH,
-    //    align: "center"
-    //};
-    //
-    //var text = game.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 10, "AI LA TRIEU PHU", style);
-    //text.anchor.set(0.5);
-    //
-    //style = {
-    //    font: "24px Arial",
-    //    fill: "#FFFFFF",
-    //    wordWrap: true,
-    //    wordWrapWidth: GAME_WIDTH,
-    //    align: "right"
-    //};
-    //
-    //text = game.add.text(GAME_WIDTH - 50, GAME_HEIGHT / 10 + 50, "online", style);
-    //text.anchor.set(1);
-
-    var spriteAltp = game.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT / 10, IMAGES.altp);
+    // draw AI LA TRIEU PHU text
+    var spriteAltp = game.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT / 10, Splash.image.altp);
     spriteAltp.scale.setTo(0.3, 0.3);
     spriteAltp.position.x = GAME_WIDTH / 2 - spriteAltp.width / 2;
 
-    var spriteOnline = game.add.sprite(GAME_WIDTH - 50, spriteAltp.position.y + spriteAltp.height + 10, IMAGES.online);
+    // draw Online text
+    var spriteOnline = game.add.sprite(GAME_WIDTH - 50, spriteAltp.position.y + spriteAltp.height + 10, Splash.image.online);
     spriteOnline.scale.setTo(0.2, 0.2);
     spriteOnline.position.x = spriteAltp.position.x + spriteAltp.width - spriteOnline.width;
 
-    // TODO add progress percent
-    var spriteProgress = game.add.sprite(GAME_WIDTH / 2, spriteOnline.position.y + spriteOnline.height + 50, IMAGES.answer0);
+    // draw progress percent
+    var spriteProgress = game.add.sprite(GAME_WIDTH / 2, spriteOnline.position.y + spriteOnline.height + 50, Splash.image.answer0);
     spriteProgress.scale.setTo(0.5, 0.5);
     spriteProgress.position.x = GAME_WIDTH / 2 - spriteProgress.width / 2;
-    
-    // TODO draw float-texts
+
+    // draw text percent
+    var style = {
+        font: "25px Arial",
+        fill: "#FFFFFF",
+        wordWrap: true,
+        wordWrapWidth: GAME_WIDTH,
+        align: "center"
+    };
+    Splash.textPercent = game.add.text(
+        spriteProgress.position.x + spriteProgress.width / 2,
+        spriteProgress.position.y + spriteProgress.height / 2 - 2,
+        Splash.percentLoaded + "%",
+        style);
+    Splash.textPercent.anchor.set(0.5);
+
+    // draw float-texts
+    style = {
+        font: "18px Arial",
+        fill: "#FFFFFF",
+        wordWrap: true,
+        wordWrapWidth: GAME_WIDTH,
+        align: "left"
+    };
+    for (var i = 0; i < Splash.dummyTexts.length; i++) {
+        var floatText = game.add.text(
+            Splash.dummyTexts[i].x * GAME_WIDTH / 100,
+            Splash.dummyTexts[i].y * GAME_HEIGHT / 100,
+            Splash.dummyTexts[i].text,
+            style);
+        floatText.anchor.set(0.5);
+        floatText.alpha = Splash.dummyTexts[i].alpha;
+        floatText.velocity = Splash.dummyTexts[i].velocity;
+        Splash.floatText.push(floatText);
+    }
 };
 
 /**============== GAME life cycle ================**/
@@ -118,9 +168,9 @@ Splash.preload = function () {
     console.log('splash: preload');
 
     this.loadScripts();
-    this.loadImages();
+    this.loadImages(Splash.image);
     this.loadFonts();
-    this.loadAudio();
+    this.loadAudio(Splash.audio);
 };
 
 /**
@@ -137,9 +187,32 @@ Splash.create = function () {
 
     setTimeout(function () {
         // TODO add transition fade-out
-        music.pause();
         //game.state.start(STATES.LOGIN);
     }, 5000);
+};
+
+Splash.update = function () {
+    // calculate percent loading
+    var currentTime = new Date().getTime();
+    Splash.percentLoaded = parseInt((currentTime - Splash.startTime) / 1000);
+    Splash.textPercent.setText(Splash.percentLoaded + ' %');
+
+    // calculate float texts
+    for (var i = 0; i < Splash.floatText.length; i++) {
+        Splash.floatText[i].position.x = Splash.floatText[i].position.x + Splash.floatText[i].velocity;
+        var delta = Math.abs(GAME_WIDTH - Splash.floatText[i].position.x);
+        delta = Math.min(delta, Splash.floatText[i].position.x);
+        var deltaAlpha = 20;
+        if (delta > deltaAlpha && delta < GAME_WIDTH - deltaAlpha) {
+            Splash.floatText[i].alpha = Splash.dummyTexts[i].alpha;
+        } else {
+            Splash.floatText[i].alpha = delta * Splash.dummyTexts[i].alpha / deltaAlpha;
+        }
+
+        if (Splash.floatText[i].position.x >= GAME_WIDTH) {
+            Splash.floatText[i].position.x = -Splash.floatText[i].width / 2;
+        }
+    }
 };
 
 /**

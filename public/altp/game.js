@@ -24,54 +24,6 @@ const STATES = {
     GAMEOVER: 'gameover'
 };
 
-/**
- * must be match with file name
- */
-var IMAGES = {
-    altp: 'altp',
-    online: 'online',
-    answer0: 'answer0',
-    answer1: 'answer1',
-    answer2: 'answer2',
-    answer4: 'answer4',
-    answer_enemy: 'answer_enemy',
-    answer_right: 'answer_right',
-    answer_wrong: 'answer_wrong',
-    table_question: 'table_question'
-    // TODO add more here
-};
-
-/**
- * must be match with file name
- */
-var AUDIO = {
-    ANS_A : 'ans_a',
-    ANS_A2: 'ans_a2',
-    ANS_B: 'ans_b',
-    ANS_B2:'ans_b2',
-    ANS_C: 'ans_c',
-    ANS_C2: 'ans_c2',
-    ANS_D: 'ans_d',
-    ANS_D2: 'ans_d2',
-    ANS_NOW1: 'ans_now1',
-    ANS_NOW2: 'ans_now2',
-    ANS_NOW3: 'ans_now3',
-    BACKGROUND_MUSIC: 'background_music',
-    BACKGROUND_MUSIC_B: 'background_music_b',
-    BACKGROUND_MUSIC_C: 'background_music_c',
-    BEST_PLAYER: 'best_player',
-    BG_MUSIC: 'bgmusic',
-    BG_MUSIC_GAMEOVER: 'bgmusic_gameover',
-    // TODO add sound here
-};
-
-/**
- * must be match with file name
- */
-var FONT = {
-
-};
-
 /**============== GAME ENGINE =====================**/
 
 var game;
@@ -84,13 +36,7 @@ window.onload = function () {
     });
 
     function preload() {
-        game.load.image('logo', DIR_IMAGE + 'SPLASH.png');
-        game.load.image('splash', DIR_IMAGE + '8-SPLASH/SPLASH.png');
-        game.load.spritesheet('btn_answers', DIR_IMAGE + '10-SPRITE/btn_answers.png', 512, 100, 4);
-        game.load.spritesheet('background', DIR_IMAGE + '9-GAMEOVER/BACKGROUND.png');
-        game.load.spritesheet('players', DIR_IMAGE + 'players.png');
-
-        game.load.script(STATES.SPLASH, DIR_STATE + 'splash.js');
+        game.load.script(STATES.SPLASH, DIR_STATE + STATES.SPLASH + '.js');
     }
 
     function create() {
