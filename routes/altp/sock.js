@@ -21,6 +21,8 @@ var gameOverMessages = require(__appname + '/data/gameover_message');
 const NUM_DUMMY_USERS = 5;  // 5 search players
 const QUESTION_NUMBERS = 15;
 
+const DEF_TOTAL_SCORE = 6000;
+
 const SCORE_TABLE = [
     200, 400, 600, 1000, 2000, //
     3000, 6000, 10000, 14000, 22000, //
@@ -69,14 +71,15 @@ altp.init = function (io) {
                         reqUser.avatar || '',
                         reqUser.lang || DEF_LANG);
 
+                    user.totalScore = DEF_TOTAL_SCORE;
+
                     mongoDb.users.insert(user, function (err, user) {
                         console.log('login:insert:ERR:' + JSON.stringify(err));
                         console.log('login:insert:user:' + JSON.stringify(user));
-
                     });
 
                     console.log('login: ' + JSON.stringify(user));
-                    sock.emit('login', {success: true, user: user});
+                    sock.emit('login', {success: true, user: user, reward: true});
                 }
                 else {
                     reqUser.totalScore = user.totalScore;
@@ -87,7 +90,7 @@ altp.init = function (io) {
                         }
                         console.log('update user: ' + JSON.stringify(result));
                         console.log('update user reqUser: ' + JSON.stringify(reqUser));
-                        sock.emit('login', {success: true, user: reqUser});
+                        sock.emit('login', {success: true, user: reqUser, reward: false});
                     });
                 }
             });
