@@ -72,6 +72,7 @@ altp.init = function (io) {
                         reqUser.lang || DEF_LANG);
 
                     user.totalScore = DEF_TOTAL_SCORE;
+                    user.fcm = reqUser.fcm;
 
                     mongoDb.users.insert(user, function (err, user) {
                         console.log('login:insert:ERR:' + JSON.stringify(err));
