@@ -597,14 +597,17 @@ altp.init = function (io) {
  * @return number bot answer index
  */
 var getBotAnswerIndex = function (level, rightIndex) {
-    if (level < 9) {
+    if (level < 5) {
         return rightIndex;
     }
 
+    // 60% right answer
     var rd = Math.randomBetween(0, 10);
-    if (rd < 8) {
+    if (rd < 6) {
         return rightIndex;
     }
+
+    // wrong answer
     return (rightIndex + 1) % 4;
 };
 
